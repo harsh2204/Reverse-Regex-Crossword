@@ -37,7 +37,15 @@ def generate_pattern(l):
 
 def pattern_amb(letter):
     return ".*"
-    pass
+
+class Pattern(object):
+    def __init__(self, L):
+        self.L = L
+        self.type = ""
+    
+class PatternType(Pattern):
+    def __init__(self, *args, **kwargs):
+        pass
 
 def pattern_range(letter):
     index = A.find(letter)
@@ -48,13 +56,14 @@ def pattern_range(letter):
 def pattern_random_set(letter): # Fix duplicates
     max_range = 7
     pattern = np.array([letter])
-    if np.random.uniform() < 0.50:
+    if np.random.uniform() < 0.10:
         max_range -= 1
-        np.append(pattern, "\\"+np.random.choice(list(puncs)))
+        pattern = np.append(pattern, "\\"+np.random.choice(list(puncs)))
     Anp = np.array(list(A))
+    Anp = np.delete(Anp, ord(letter)-65)
+    np.random.shuffle(Anp)
 
-    randoms = np.random.choice(Anp[Anp!=letter], np.random.randint(1, max_range+1))
-    
+    randoms =  Anp[0:np.random.randint(1, max_range+1)]
     pattern = np.append(pattern, randoms)
     np.random.shuffle(pattern)
     return f'[{"".join(list(pattern))}]'
@@ -121,6 +130,14 @@ def get_pattern(matrix: np.ndarray, ix: int, iy: int) -> PatternVector:
 # dog$	                ends with "dog"
 # ^dog$	                is exactly "dog"
 
+# \d             [0-9]
+# \D             [^\d]
+# \s             [ \t\n\x0B\f\r]
+# \S             [^\s]
+# \w             [a-zA-Z0-9_]
+# \W             [^\w]
+# .              any character at all, except maybe not a line terminator
+
 
 
 
@@ -134,3 +151,6 @@ col = matrix[:, 0]
 row = matrix[0, :]
 
 get_pattern(matrix, 0, 0)
+
+
+print(pattern_random_set('T'))
