@@ -3,32 +3,73 @@ from random import randrange, sample
 import string
 
 
-
-
 class PatternBase(object):
-    def __init__(self, vector: np.array, *args, **kwargs):
+    def __init__(self, vector: np.array, is_uniform=True, uni_steps=1, *args, **kwargs):
         self.v = vector
         self.N = vector.size
-        
+        self.is_un = is_uniform
+        self.uni_steps = uni_steps
+            
+    def chop(self):
+        if not self.is_un:
+            n_chops = randrange(1, self.v.size)        
+            
+            slice_indices = sample(range(self.v.size), n_chops)
+
+            slice_indices.sort()
+            # print(n_chops, slice_indices)
+
+            if slice_indices[0] == 0:
+                del slice_indices[0]
+
+            chopped = []
+            lower_index = 0
+            for i in slice_indices:
+                chopped.append(self.v[lower_index:i])
+                lower_index = i
+            chopped.append(self.v[lower_index:])
+            # print(chopped)
+            return chopped
+        else:
+            chopped = []
+            for i in range(0, len(self.v), self.uni_steps):
+                ss = self.v[i:i+self.uni_steps]
+                chopped.append("".join(ss))
+            return chopped
 
 class SimplePattern(PatternBase):
     def make_pattern(self):
-        return list(self.v)
+        chopped = self.chop()
+        if not self.is_un:
+            chopped = ["".join(x) for x in chopped]
+        return chopped
 
 class SimpleORS(PatternBase):
     def make_pattern(self):
-        # we will make a random or dup and concatenate it as, rand|letter. And we will return a list of strings in this manner.
+        # we will make a random or dup and concatenate it as, rand|letter. 
+        
         patterns = []
-        for l in self.v:
-            l_index = ord(l)-65
+        self.chopped = self.chop()
+
+        for l in self.chopped:
             alphabet = string.ascii_uppercase
-            rand_index = sample([n for n in range(len(alphabet)) if n != l_index], 1)[0]
-            p = f'{alphabet[rand_index]}|{l}' if rand_index < l_index else f'{l}|{alphabet[rand_index]}'
+            random_set = np.array(list(alphabet))         
+            np.random.shuffle(random_set)
+            random_set = random_set[:self.uni_steps]
+            random_string = "".join(list(random_set))
+            if l == random_string:
+                random_string = chr((ord(l[0]) + 1)) + l[1:] if ord(l[0]) + 1 < 90 else 'A' + l[1:]
+
+            p = f'{random_string}|{l}' if np.random.uniform() < 0.50 else f'{l}|{random_string}'
             patterns.append(p)
         return patterns
 
 class ORS(PatternBase):
 
+    def __init__(self, vector: np.array, is_uniform=False, *args, **kwargs):
+        self.v = vector
+        self.N = vector.size
+        self.is_un = is_uniform        
 
     @staticmethod
     def make_ors(l: str, max_randoms=3):
@@ -54,27 +95,6 @@ class ORS(PatternBase):
         np.random.shuffle(pattern)
         return f"({'|'.join(list(pattern))}){star}"
 
-
-    @staticmethod
-    def chop(v):
-        n_chops = randrange(1, v.size)        
-        
-        slice_indices = sample(range(v.size), n_chops)
-
-        slice_indices.sort()
-        # print(n_chops, slice_indices)
-
-        if slice_indices[0] == 0:
-            del slice_indices[0]
-
-        chopped = []
-        lower_index = 0
-        for i in slice_indices:
-            chopped.append(v[lower_index:i])
-            lower_index = i
-        chopped.append(v[lower_index:])
-        # print(chopped)
-        return chopped
         
     def make_pattern(self):
         if self.N < 3:
@@ -88,7 +108,7 @@ class ORS(PatternBase):
 
         # print(gap, offset, ors, remainder)
         
-        self.chopped = self.chop(self.v)
+        self.chopped = self.chop()
         patterns = []
         for l in self.chopped:
             patterns.append(self.make_ors(l))
