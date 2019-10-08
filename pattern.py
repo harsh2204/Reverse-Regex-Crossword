@@ -4,15 +4,16 @@ import string
 
 
 class PatternBase(object):
-    def __init__(self, vector: np.array, is_uniform=True, uni_steps=1, *args, **kwargs):
+    def __init__(self, vector: np.array, is_uniform=True, uni_steps=1, universal_set=string.ascii_uppercase, *args, **kwargs):
         self.v = vector
         self.N = vector.size
         self.is_un = is_uniform
         self.uni_steps = uni_steps
+        self.U = universal_set
             
     def chop(self):
         if not self.is_un:
-            n_chops = randrange(1, self.v.size)        
+            n_chops = randrange(1, self.v.size) 
             
             slice_indices = sample(range(self.v.size), n_chops)
 
@@ -52,8 +53,7 @@ class SimpleORS(PatternBase):
         self.chopped = self.chop()
 
         for l in self.chopped:
-            alphabet = string.ascii_uppercase
-            random_set = np.array(list(alphabet))         
+            random_set = np.array(list(self.U))         
             np.random.shuffle(random_set)
             random_set = random_set[:self.uni_steps]
             random_string = "".join(list(random_set))
@@ -73,8 +73,8 @@ class ORS(PatternBase):
 
     @staticmethod
     def make_ors(l: str, max_randoms=3):
-        # make a random ne  of N terms where l is appended, and the set is shuffled. 
-        # alternatively we could use a random index to append tothe set  which would bring down the iterations.
+        # make a random set of N terms where l is appended, and the set is shuffled. 
+        # alternatively we could use a random index to append to the set which would bring down the iterations.
         # Note: we must make sure that we don't have l in our randomly selected set of N terms.
 
         # if (v.size - max_randoms) > 2
@@ -85,8 +85,7 @@ class ORS(PatternBase):
         if l.size != 1 and (np.random.uniform() < 0.50):
             star = "+"
             
-        alphabet = string.ascii_uppercase
-        random_set = np.array(list(alphabet))
+        random_set = np.array(list(self.U))
         random_set = np.delete(random_set, [ord(letter)-65 for letter in l])
         np.random.shuffle(random_set)
         random_set = random_set[:N]
