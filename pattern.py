@@ -120,20 +120,37 @@ class ORS(PatternBase):
 
 class Range(PatternBase):
     
-    def __init__(self, vector: np.array, is_uniform=False, uni_steps=1, universal_set=string.ascii_uppercase, *args, **kwargs):
+    def __init__(self, vector: np.array, is_uniform=False, uni_steps=1, negate=False, universal_set=string.ascii_uppercase, *args, **kwargs):
         self.v = vector
         self.N = vector.size
         self.is_un = is_uniform
-        self.U = universal_set
+        self.U = universal_set        
+        self.negate = negate
 
     def make_range(self, l: str):
         # print(l)
+        
         if len(l) == 1: #Stupid way
-            index = self.U.index(l[0])
+            index = self.U.index(l[0])            
             low = randrange(0,index+1)
             high = randrange(index,len(self.U))
-            return f'[{self.U[low]}-{self.U[high]}]{"" if np.random.uniform() < 0.50 else "*" }'
+
+            if self.negate:
+                low_range = randrange(0, index) if low != index else index
+                high_range = randrange(index+1, len(self.U)-1)                
+                if index - low_range >= 3:
+                    low = low_range
+                    high = randrange(low+1, index)
+                else:
+                    low = high_range
+                    high = randrange(low+1, len(self.U))
+
+                
+            return f'[{"^" if self.negate else ""}{self.U[low]}-{self.U[high]}]{"*" if np.random.uniform() < 0.50 else ""}'
         else:
+            if self.negate: #Not sure if this is the right way to do this
+                return "".join([self.make_range(letter) for letter in l])
+
             l = list(l)
             l.sort(key=lambda x: self.U.index(x))
             s_string = ''.join(l)
@@ -151,6 +168,48 @@ class Range(PatternBase):
             patterns.append(self.make_range(l))
         return patterns
 
+class RangeSet(PatternBase):
+
+    def __init__(self, vector: np.array, is_uniform=False, uni_steps=1, negate=False, universal_set=string.ascii_uppercase, *args, **kwargs):
+        self.v = vector
+        self.N = vector.size
+        self.is_un = is_uniform
+        self.U = universal_set
+        self.negate = negate
+
+    def make_range(self, l: str, max_randoms=3):
+        min_randoms = 1
+        pattern = np.array([])
+        if not self.negate:
+            pattern = np.array(l)
+        else:
+            max_randoms = 6
+            min_randoms = 4
+        N = randrange(1, max_randoms)
+
+        star = "" if l.size == 1 and np.random.uniform() < 0.50 else "*"
+        if l.size != 1 and (np.random.uniform() < 0.50):
+            star = "+"
+
+        random_set = np.array(list(self.U))
+        random_set = np.delete(random_set, [self.U.index(letter) for letter in l])
+        np.random.shuffle(random_set)
+        random_set = random_set[:N]
+
+        pattern = np.append(pattern, random_set)
+        np.random.shuffle(pattern)
+
+        return f'[{"^" if self.negate else ""}{"".join(pattern)}]{star}'
+
+    def make_pattern(self):
+
+        self.chopped = self.chop()
+        patterns = []
+        for l in self.chopped:
+            patterns.append(self.make_range(l))
+        return patterns
+
+
 class Pattern(object):
     
     def __init__(self, vector: np.array, *args, **kwargs):
@@ -158,7 +217,7 @@ class Pattern(object):
         self.type = ORS(vector) 
         # Figure out 
     def get_pattern(self):
-        for type in [ORS,SimpleORS, SimplePattern, Range]:
+        for type in [ORS,SimpleORS, SimplePattern, Range, RangeSet]:
             self.type = type(self.v)
             print(type.__name__)
             self.pattern = self.type.make_pattern()
