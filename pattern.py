@@ -5,6 +5,8 @@ from pprint import pprint
 
 class PatternBase(object):
 
+    negatable = False
+
     def __init__(self, pattern, *args, **kwargs):
         self.v = pattern.v
         self.N = self.v.size
@@ -35,7 +37,7 @@ class SimpleORS(PatternBase):
             # if l == random_string:
             #     random_string = self.U[(self.U.index(l[0]) + 1)] + l[1:] if self.U.index(l[0]) + 1 < len(self.U) else self.U[0] + l[1:]
 
-            p = f'{random_string}|{"".join(l)}' if np.random.uniform() < 0.50 else f'{"".join(l)}|{random_string}'
+            p = f'({random_string}|{"".join(l)})' if np.random.uniform() < 0.50 else f'({"".join(l)}|{random_string})'
             patterns.append(p)
         return patterns
 
@@ -75,6 +77,7 @@ class ORS(PatternBase):
 
 
 class Range(PatternBase):
+    negatable = True
     
     def __init__(self, pattern, negate=False, *args, **kwargs):
         self.v = pattern.v
@@ -126,6 +129,8 @@ class Range(PatternBase):
         return patterns
 
 class RangeSet(PatternBase):
+
+    negatable = True
 
     def __init__(self, pattern, negate=False, *args, **kwargs):
         self.v = pattern.v
@@ -203,19 +208,31 @@ class Pattern(object):
         else:
             self.chop()
         
+
     def generate_patterns(self):
         for _type in self.types:            
             self.type = _type(self)                        
             pattern = self.type.make_pattern()            
             self.patterns.append(pattern)
+        self.patterns = [list(x) for x in zip(*self.patterns)]
 
-    def get_patterns(self):
-        return self.patterns
-    
 
-p = Pattern(np.array(['A', 'B', 'C', 'D', 'E', 'F']))
-p.generate_patterns()
-pprint(p.get_patterns())
+    def set_pattern(self):
+        pattern = []
+        for choices in self.patterns:
+            pattern.append(sample(choices, 1)[0])        
+        self.pattern = "".join(pattern)
+
+
+    def get_pattern(self):
+        return self.pattern
+
+if __name__ == "__main__":
+    p = Pattern(np.array(['A', 'B', 'C', 'D', 'E', 'F']))
+    p.generate_patterns()
+    # pprint(p.patterns)
+    p.set_pattern()
+    pprint(p.get_pattern())
 
 # We should validate the pattern once we start putting the individual patterns together into one pattern
 
