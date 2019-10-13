@@ -1,90 +1,57 @@
 import numpy as np
 from random import randrange, sample
 import string
-
+from pprint import pprint
 
 class PatternBase(object):
-    def __init__(self, vector: np.array, is_uniform=True, uni_steps=1, universal_set=string.ascii_uppercase, *args, **kwargs):
-        self.v = vector
-        self.N = vector.size
-        self.is_un = is_uniform
-        self.uni_steps = uni_steps
-        self.U = universal_set
-            
-    def chop(self):
-        if not self.is_un:
-            n_chops = randrange(1, self.v.size) 
-            
-            slice_indices = sample(range(self.v.size), n_chops)
 
-            slice_indices.sort()
-            # print(n_chops, slice_indices)
-
-            if slice_indices[0] == 0:
-                del slice_indices[0]
-
-            chopped = []
-            lower_index = 0
-            for i in slice_indices:
-                chopped.append(self.v[lower_index:i])
-                lower_index = i
-            chopped.append(self.v[lower_index:])
-            # print(chopped)
-            return chopped
-        else:
-            chopped = []
-            for i in range(0, len(self.v), self.uni_steps):
-                ss = self.v[i:i+self.uni_steps]
-                chopped.append("".join(ss))
-            return chopped
+    def __init__(self, pattern, *args, **kwargs):
+        self.v = pattern.v
+        self.N = self.v.size
+        self.is_un = pattern.is_un
+        self.uni_steps = pattern.uni_steps
+        self.U = pattern.U
+        self.chopped = pattern.chopped
 
 class SimplePattern(PatternBase):
-    def make_pattern(self):
-        chopped = self.chop()
+    def make_pattern(self):      
         if not self.is_un:
-            chopped = ["".join(x) for x in chopped]
-        return chopped
+            self.chopped = ["".join(x) for x in self.chopped]
+        return self.chopped
 
 class SimpleORS(PatternBase):
     def make_pattern(self):
         # we will make a random or dup and concatenate it as, rand|letter. 
         
-        patterns = []
-        self.chopped = self.chop()
+        # TODO: Implement partial randomness rather than full randomness
+        patterns = []  
 
         for l in self.chopped:
             random_set = np.array(list(self.U))         
             np.random.shuffle(random_set)
-            random_set = random_set[:self.uni_steps]
+            random_set = np.delete(random_set, [self.U.index(letter) for letter in l])
+            random_set = random_set[:len(l)]
             random_string = "".join(list(random_set))
-            if l == random_string:
-                random_string = self.U[(self.U.index(l[0]) + 1)] + l[1:] if self.U.index(l[0]) + 1 < len(self.U) else self.U[0] + l[1:]
+            # if l == random_string:
+            #     random_string = self.U[(self.U.index(l[0]) + 1)] + l[1:] if self.U.index(l[0]) + 1 < len(self.U) else self.U[0] + l[1:]
 
-            p = f'{random_string}|{l}' if np.random.uniform() < 0.50 else f'{l}|{random_string}'
+            p = f'{random_string}|{"".join(l)}' if np.random.uniform() < 0.50 else f'{"".join(l)}|{random_string}'
             patterns.append(p)
         return patterns
 
 class ORS(PatternBase):
 
-    def __init__(self, vector: np.array, is_uniform=False, uni_steps=1, universal_set=string.ascii_uppercase, *args, **kwargs):
-        self.v = vector
-        self.N = vector.size
-        self.is_un = is_uniform
-        self.U = universal_set
-        self.uni_steps = uni_steps
-
-
     def make_ors(self, l: str, max_randoms=3):
         # make a random set of N terms where l is appended, and the set is shuffled. 
         # alternatively we could use a random index to append to the set which would bring down the iterations.
         # Note: we must make sure that we don't have l in our randomly selected set of N terms.
-
-        # if (v.size - max_randoms) > 2
+        
+        # print(l)
         pattern = np.array(l)
         N = randrange(1, max_randoms)
         
-        star = "" if l.size == 1 and np.random.uniform() < 0.50 else "*"
-        if l.size != 1 and (np.random.uniform() < 0.50):
+        star = "" if len(l) == 1 and np.random.uniform() < 0.50 else "*"
+        if len(l) != 1 and (np.random.uniform() < 0.50):
             star = "+"
             
         random_set = np.array(list(self.U))
@@ -100,18 +67,7 @@ class ORS(PatternBase):
     def make_pattern(self):
         if self.N < 3:
             return "".join(list(self.v))
-
-        # Remove this later
-
-        # gap = randrange(2, self.N) 
-        # offset = randrange(self.N - gap + 1)
-
-        # ors = self.v[offset:offset + gap]
-        # remainder = np.setdiff1d(self.v, ors)
-
-        # print(gap, offset, ors, remainder)
         
-        self.chopped = self.chop()
         patterns = []
         for l in self.chopped:
             patterns.append(self.make_ors(l))
@@ -120,11 +76,13 @@ class ORS(PatternBase):
 
 class Range(PatternBase):
     
-    def __init__(self, vector: np.array, is_uniform=False, uni_steps=1, negate=False, universal_set=string.ascii_uppercase, *args, **kwargs):
-        self.v = vector
-        self.N = vector.size
-        self.is_un = is_uniform
-        self.U = universal_set        
+    def __init__(self, pattern, negate=False, *args, **kwargs):
+        self.v = pattern.v
+        self.N = self.v.size
+        self.is_un = pattern.is_un
+        self.uni_steps = pattern.uni_steps
+        self.U = pattern.U
+        self.chopped = pattern.chopped
         self.negate = negate
 
     def make_range(self, l: str):
@@ -162,7 +120,6 @@ class Range(PatternBase):
     def make_pattern(self):
         # Think about base cases for this
         
-        self.chopped = self.chop()
         patterns = []
         for l in self.chopped:
             patterns.append(self.make_range(l))
@@ -170,11 +127,13 @@ class Range(PatternBase):
 
 class RangeSet(PatternBase):
 
-    def __init__(self, vector: np.array, is_uniform=False, uni_steps=1, negate=False, universal_set=string.ascii_uppercase, *args, **kwargs):
-        self.v = vector
-        self.N = vector.size
-        self.is_un = is_uniform
-        self.U = universal_set
+    def __init__(self, pattern, negate=False, *args, **kwargs):
+        self.v = pattern.v
+        self.N = self.v.size
+        self.is_un = pattern.is_un
+        self.uni_steps = pattern.uni_steps
+        self.U = pattern.U
+        self.chopped = pattern.chopped
         self.negate = negate
 
     def make_range(self, l: str, max_randoms=3):
@@ -187,8 +146,8 @@ class RangeSet(PatternBase):
             min_randoms = 4
         N = randrange(1, max_randoms)
 
-        star = "" if l.size == 1 and np.random.uniform() < 0.50 else "*"
-        if l.size != 1 and (np.random.uniform() < 0.50):
+        star = "" if len(l) == 1 and np.random.uniform() < 0.50 else "*"
+        if len(l) != 1 and (np.random.uniform() < 0.50):
             star = "+"
 
         random_set = np.array(list(self.U))
@@ -203,7 +162,6 @@ class RangeSet(PatternBase):
 
     def make_pattern(self):
 
-        self.chopped = self.chop()
         patterns = []
         for l in self.chopped:
             patterns.append(self.make_range(l))
@@ -211,25 +169,53 @@ class RangeSet(PatternBase):
 
 
 class Pattern(object):
-    
-    def __init__(self, vector: np.array, *args, **kwargs):
-        self.v = vector        
-        self.type = ORS(vector) 
-        # Figure out 
-    def get_pattern(self):
-        for type in [ORS,SimpleORS, SimplePattern, Range, RangeSet]:
-            self.type = type(self.v)
-            print(type.__name__)
-            self.pattern = self.type.make_pattern()
-            print(self.pattern)
-            if not self.type.is_un:
-                print('Chopped: ',[list(x) for x in self.type.chopped])
+    types = [ORS, SimpleORS, SimplePattern, Range, RangeSet]
+    def chop(self):
+        self.chopped = []
+        if not self.is_un:
+            n_chops = randrange(1, self.v.size) 
+            
+            slice_indices = sample(range(self.v.size), n_chops)
+            slice_indices.sort()
 
-        return self.pattern
+            if slice_indices[0] == 0:
+                del slice_indices[0]
+
+            lower_index = 0
+            for i in slice_indices:
+                self.chopped.append(self.v[lower_index:i])
+                lower_index = i
+            self.chopped.append(self.v[lower_index:])        
+        else:    
+            for i in range(0, len(self.v), self.uni_steps):
+                ss = self.v[i:i+self.uni_steps]
+                self.chopped.append("".join(ss))
+
+    def __init__(self, vector: np.array, is_uniform=True, uni_steps=1, universal_set=string.ascii_uppercase, chopped=None, *args, **kwargs):
+        self.v = vector
+        self.N = vector.size
+        self.is_un = is_uniform
+        self.uni_steps = uni_steps
+        self.U = universal_set
+        self.patterns = []
+        if chopped:
+            self.chopped = chopped
+        else:
+            self.chop()
+        
+    def generate_patterns(self):
+        for _type in self.types:            
+            self.type = _type(self)                        
+            pattern = self.type.make_pattern()            
+            self.patterns.append(pattern)
+
+    def get_patterns(self):
+        return self.patterns
     
 
 p = Pattern(np.array(['A', 'B', 'C', 'D', 'E', 'F']))
-p.get_pattern()
+p.generate_patterns()
+pprint(p.get_patterns())
 
 # We should validate the pattern once we start putting the individual patterns together into one pattern
 
