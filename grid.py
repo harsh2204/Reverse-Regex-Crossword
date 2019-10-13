@@ -5,16 +5,20 @@ from math import sqrt
 import numpy as np
 
 
-class Grid():
+class Puzzle():
 
-    def __init__(self, words, grid_size): #TODO Complete this after patterns
-        if len(args == 0):
-            print("Starting automatic interactive grid setup")
+    def __init__(self, words=None): #TODO Complete this after patterns
+        if words:
+            self.words = words
+            self.is_square = all([len(n)%2 and sqrt(len(n)).is_integer() for n in words])
 
-        self.is_square = sqrt(n).is_integer()
-        return 
+            if not self.is_square:
+                print("Entered word(s) are not square")
+                return None
+        else:
+            self.setup_grid()
 
-    def print_empty_grid(x, y):    
+    def print_empty_grid(x, y):
         print("+"+"--+"*x)
         for _ in range(y):
             for _ in range(x):
@@ -22,13 +26,13 @@ class Grid():
             print("|")                        
             print("+"+"--+"*x)    
 
-    def print_grid(l: list):    
+    def print_grid(l: list):  
         x = len(l[0])
         print("+"+"--+"*x)
         for row in l:
             print("|"+" |".join(list(row)), end = '')
             print(" |")                        
-            print("+"+"--+"*x)  
+            print("+"+"--+"*x)
 
     def setup_grid(s:str, use_default=True):
         n = len(s)

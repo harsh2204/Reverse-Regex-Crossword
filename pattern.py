@@ -196,13 +196,14 @@ class Pattern(object):
                 ss = self.v[i:i+self.uni_steps]
                 self.chopped.append("".join(ss))
 
-    def __init__(self, vector: np.array, is_uniform=True, uni_steps=1, universal_set=string.ascii_uppercase, chopped=None, *args, **kwargs):
+    def __init__(self, vector: np.array, degree=1, is_uniform=True, uni_steps=1, universal_set=string.ascii_uppercase, chopped=None, *args, **kwargs):
         self.v = vector
         self.N = vector.size
         self.is_un = is_uniform
         self.uni_steps = uni_steps
         self.U = universal_set
         self.patterns = []
+        self.degree = degree
         if chopped:
             self.chopped = chopped
         else:
@@ -218,10 +219,13 @@ class Pattern(object):
 
 
     def set_pattern(self):
-        pattern = []
+        pattern = [[] for _ in range(self.degree)]
         for choices in self.patterns:
-            pattern.append(sample(choices, 1)[0])        
-        self.pattern = "".join(pattern)
+            selection = sample(choices, self.degree)
+            for i in range(self.degree):
+                pattern[i].append(selection[i])
+
+        self.pattern = ["".join(p) for p in pattern]
 
 
     def get_pattern(self):
