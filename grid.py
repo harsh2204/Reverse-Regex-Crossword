@@ -5,19 +5,24 @@ from math import sqrt
 import numpy as np
 
 
-class Puzzle():
+class Puzzle(object):
+     
+     
+    @staticmethod
+    def is_square(words):
+        return all([len(n)%2 == 0 or sqrt(len(n)).is_integer() for n in words])
+
 
     def __init__(self, words=None): #TODO Complete this after patterns
         if words:
-            self.words = words
-            self.is_square = all([len(n)%2 and sqrt(len(n)).is_integer() for n in words])
-
-            if not self.is_square:
+            self.words = words            
+            if not self.is_square(words):
                 print("Entered word(s) are not square")
                 return None
         else:
             self.setup_grid()
 
+    @staticmethod
     def print_empty_grid(x, y):
         print("+"+"--+"*x)
         for _ in range(y):
@@ -25,8 +30,8 @@ class Puzzle():
                 print("|  ", end='')
             print("|")                        
             print("+"+"--+"*x)    
-
-    def print_grid(l: list):  
+    
+    def print_grid(self, l):          
         x = len(l[0])
         print("+"+"--+"*x)
         for row in l:
@@ -34,13 +39,58 @@ class Puzzle():
             print(" |")                        
             print("+"+"--+"*x)
 
-    def setup_grid(s:str, use_default=True):
-        n = len(s)
-        if n%2 and not is_square(n):
-            print("String not compatible due to odd length:", n)
+    def setup_grid(self, use_default=True):
+        words = input("Please enter the puzzle string(s), separated by commas (,) without extra white space if more than one.\n").split(',')
+            
+        if not self.is_square(words):
+            print("String not compatible due to odd length:", len(words[0]))
             return
         
-        
+        deg = len(words)
+                        
+        s = words[0]
+
+        if deg > 1:                                
+            max_len = len(max(words, key=len))
+            min_len = len(min(words, key=len))
+            if max_len != min_len:
+                print(f"There was missmatch in lengths of strings inside your puzzle. The shortest string has {min_len} whereas the longest string has {max_len} letters")
+                response = ""
+                while not use_default and response.lower() not in ['y', 'n']:
+                    response = input(f"Would you like to fill the remaining characters with blank spaces?\n").lower()
+                if use_default or response == 'y':
+                    for i in range(len(words)):
+                        cur_len = len(words[i])
+                        if cur_len < max_len:
+                            words[i] = words[i] + " "*(max_len-cur_len)
+                        print(f"*{words[i]}*")
+
+            top_string = words[0]
+
+            if not use_default:    
+                print("The default degree for every vector is 1, meaning every vector/row will have only one pattern as a clue. You can change this value now if you'd like")
+                degree = input("Please enter a degree (1-n): ")
+                if degree.isnumeric() and int(degree) > 0:
+                    print("Changing degree to", degree)
+                    self.degree = degree
+
+                print("Given the higher dimensional string input, please select a sensible plane string")
+                response = None
+                for i, v in enumerate(words, 1):
+                    print(f"[{i}] {v.upper()}")
+                
+                while response not in range(1, len(words)+1):
+                    response = int(input(f"Please select a string in range(1-{len(words)}): "))
+                
+                top_string = words[response-1]
+            else:
+                print("Defaulting to 1\n")
+                self.degree = 1
+            
+            s = top_string
+            
+        n = len(s)        
+
         combs = []
         if n <= 4:
             combs.append(set([n//2, n//2]))
@@ -50,7 +100,7 @@ class Puzzle():
             if n%j==0 and tup not in combs:
                 combs.append(tup)
         
-        print(combs)
+        # print(combs)
         if len(combs) == 0:
             print("Could not find any combinations")
             return
@@ -68,7 +118,7 @@ class Puzzle():
                     rows = re.findall('.{1,'+str(y)+'}', s)        
                 else:
                     rows = re.findall('.{1,'+str(x)+'}', s)        
-                print_grid(rows)
+                self.print_grid(rows)
 
             resp = input('Please select a configuration for the crossword (the number inside []): ')
 
@@ -89,10 +139,10 @@ class Puzzle():
             if not use_default:
                 selection = [str(x) for x in selection]
                 print("\n[0]", " x ".join(selection))
-                print_grid(choices[0])
+                self.print_grid(choices[0])
                 selection.reverse()
                 print("\n[1]", " x ".join(selection))
-                print_grid(choices[1])
+                self.print_grid(choices[1])
                 ori = input("Please select an orientation for the grid: ")        
             else:
                 ori = 0
@@ -102,4 +152,10 @@ class Puzzle():
             rows = re.findall('.{1,'+str(selection[0])+'}', s)
             
         rows = [list(x) for x in rows]
+        # self.print_grid(rows)
         return np.array(rows)
+
+if __name__ == "__main__":
+    g = Puzzle()
+    
+    #assume,food,national
