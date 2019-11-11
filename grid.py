@@ -88,7 +88,8 @@ class Puzzle(object):
                 self.degree = 1
             
             s = top_string
-            
+        self.top_string = s
+
         n = len(s)        
 
         combs = []
@@ -105,7 +106,7 @@ class Puzzle(object):
             print("Could not find any combinations")
             return
 
-        os.system('cls' if os.name == 'nt' else 'clear')
+        # os.system('cls' if os.name == 'nt' else 'clear')
         selection = list(combs[-1])
         if not use_default:
             for c, v in enumerate(combs, 1):
@@ -130,12 +131,10 @@ class Puzzle(object):
             os.system('cls' if os.name == 'nt' else 'clear')
             selection = list(combs[resp-1])    
 
-        rows = []
+        rows = [] # Rename this to something more useful        
         if len(selection) > 1:
-            choices = [
-                re.findall('.{1,'+str(selection[0])+'}', s),
-                re.findall('.{1,'+str(selection[1])+'}', s)
-            ]
+            choices = [re.findall('.{1,'+str(sel)+'}', s) for sel in selection]
+            
             if not use_default:
                 selection = [str(x) for x in selection]
                 print("\n[0]", " x ".join(selection))
@@ -151,9 +150,12 @@ class Puzzle(object):
         else:
             rows = re.findall('.{1,'+str(selection[0])+'}', s)
             
-        rows = [list(x) for x in rows]
-        # self.print_grid(rows)
-        return np.array(rows)
+        # Setup the final grid with the correct dimensions and spaces. We still need to split all the other vectors before we construct the final grid.
+        
+        rows = [np.array(row) for row in rows]
+        
+        self.vectors = np.array(rows)
+        return self.vectors
 
 if __name__ == "__main__":
     g = Puzzle()
