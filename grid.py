@@ -131,7 +131,7 @@ class Puzzle(object):
             os.system('cls' if os.name == 'nt' else 'clear')
             selection = list(combs[resp-1])
 
-        l_splitted = [re.findall('.{1,'+str(selection[0])+'}', w) for w in words] #Still have no clue why I'm using a list for selection here...
+        l_splitted = [re.findall('.{1,'+str(selection[-1])+'}', w) for w in words] #Still have no clue why I'm using a list for selection here...
 
         vectors = []
         for v in l_splitted:            
@@ -139,7 +139,7 @@ class Puzzle(object):
             vectors.append(np.array(d_array))        
         
         self.vectors = np.dstack(vectors)
-        print(self.vectors)
+    
         # Setup the final grid with the correct dimensions and spaces.
         # We still need to split all the other vectors before we construct the final grid.
         # Eventually, we can start packing letters to accomodate the input words.
@@ -154,5 +154,12 @@ class Puzzle(object):
 if __name__ == "__main__":
     g = Puzzle()
     
+    # Print the sensible plane face
+    # g.print_grid(g.vectors[:, :, 0])
+
+    # Print all the layers along the sensible plane
+    for i in range(g.vectors.shape[-1]):
+        g.print_grid(g.vectors[:, :, i])
+        print("="*25, "\n")
     #assume,food,national
     #assume,foodee,nation

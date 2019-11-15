@@ -21,7 +21,7 @@ for i in range(shape[0]):
 
 print("COLS")
 for i in range(shape[1]):
-    a = puzzle.vectors[:,i]
+    a = puzzle.vectors[:,i, :]
     print(a)
     p_n = Pattern(a)
     p_n.generate_patterns()
