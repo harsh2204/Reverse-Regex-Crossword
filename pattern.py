@@ -246,3 +246,5 @@ if __name__ == "__main__":
 # 2D - | A | B | C | [A-B]+C?
     #  | D | E | F |
     #  | G | H | I |
+
+    # TODO: Fix space handling

@@ -13,14 +13,14 @@ class Puzzle(object):
         return all([len(n)%2 == 0 or sqrt(len(n)).is_integer() for n in words])
 
 
-    def __init__(self, words=None): #TODO Complete this after patterns
+    def __init__(self, words=None, use_default=True): #TODO Complete this after patterns
         if words:
             self.words = words            
             if not self.is_square(words):
                 print("Entered word(s) are not square")
                 return None
         else:
-            self.setup_grid()
+            self.setup_grid(use_default)
 
     @staticmethod
     def print_empty_grid(x, y):
@@ -41,7 +41,7 @@ class Puzzle(object):
 
     def setup_grid(self, use_default=True):
         words = input("Please enter the puzzle string(s), separated by commas (,) without extra white space if more than one.\n").split(',')
-            
+        words = [w.upper() for w in words]
         if not self.is_square(words):
             print("String not compatible due to odd length:", len(words[0]))
             return
@@ -85,7 +85,7 @@ class Puzzle(object):
                 top_string = words[response-1]
             else:
                 print("Defaulting to 1\n")
-                self.degree = 1
+                self.degree = 2 if deg > 1 else 1
             
             s = top_string
         self.top_string = s
@@ -95,13 +95,12 @@ class Puzzle(object):
         combs = []
         if n <= 4:
             combs.append(set([n//2, n//2]))
-        for j in range(2,n//2):
-            print(j)
+        for j in range(2,n//2):            
             tup = set([j, n//j])
             if n%j==0 and tup not in combs:
                 combs.append(tup)
         
-        # print(combs)
+
         if len(combs) == 0:
             print("Could not find any combinations")
             return
@@ -123,41 +122,37 @@ class Puzzle(object):
 
             resp = input('Please select a configuration for the crossword (the number inside []): ')
 
+
             assert resp.isdigit(), "Please enter an integer!"
             resp = int(resp)
 
             assert resp<=len(combs), f"Please enter a value in range 1, {str(len(combs))}"
 
             os.system('cls' if os.name == 'nt' else 'clear')
-            selection = list(combs[resp-1])    
+            selection = list(combs[resp-1])
 
-        rows = [] # Rename this to something more useful        
-        if len(selection) > 1:
-            choices = [re.findall('.{1,'+str(sel)+'}', s) for sel in selection]
-            
-            if not use_default:
-                selection = [str(x) for x in selection]
-                print("\n[0]", " x ".join(selection))
-                self.print_grid(choices[0])
-                selection.reverse()
-                print("\n[1]", " x ".join(selection))
-                self.print_grid(choices[1])
-                ori = input("Please select an orientation for the grid: ")        
-            else:
-                ori = 0
-            rows = choices[int(ori)]        
+        l_splitted = [re.findall('.{1,'+str(selection[0])+'}', w) for w in words] #Still have no clue why I'm using a list for selection here...
 
-        else:
-            rows = re.findall('.{1,'+str(selection[0])+'}', s)
-            
-        # Setup the final grid with the correct dimensions and spaces. We still need to split all the other vectors before we construct the final grid.
+        vectors = []
+        for v in l_splitted:            
+            d_array = [list(x) for x in v]
+            vectors.append(np.array(d_array))        
         
-        rows = [np.array(row) for row in rows]
+        self.vectors = np.dstack(vectors)
+        print(self.vectors)
+        # Setup the final grid with the correct dimensions and spaces.
+        # We still need to split all the other vectors before we construct the final grid.
+        # Eventually, we can start packing letters to accomodate the input words.
+
         
-        self.vectors = np.array(rows)
-        return self.vectors
+        # rows = [np.array(row) for row in rows]
+        
+        # self.vectors = np.array(rows)
+        # return self.vectors
+        # return an n dimensional array of letters
 
 if __name__ == "__main__":
     g = Puzzle()
     
     #assume,food,national
+    #assume,foodee,nation

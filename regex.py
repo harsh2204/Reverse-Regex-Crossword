@@ -1,99 +1,37 @@
-import re
-import numpy as np
-from typing import Tuple
+from grid import Puzzle
+from pattern import Pattern
 
-from grid import setup_grid
-import string
+puzzle = Puzzle()
 
-PatternVector = Tuple[str, str]
+shape = puzzle.vectors.shape
 
+row_patterns = []
+col_patterns = []
 
-A = string.ascii_uppercase
-
-puncs = string.punctuation
-
-# pat = 'HE|LL|O+'
-# pat = '[^SPEAK]+'
-
-
-# random_words = open('accepted_words').read().split("\n")
-# sel = random.choice(random_words)
-# print("@"+sel+"@")
-def check_pattern(pat):
-    try :
-        a = re.compile(pat)
-        # print("regex compiled successfuly.")
-        return True
-    except:
-        return False
-
-def generate_pattern(l):
-    print(l)
-    letters = np.unique(l)
-    print("letters")
-    simple = "("+"|".join(letters) + ")+"
-    print("simple regex: '" + simple + "' validity_test_pass: ", check_pattern(simple))
-    # print(letters)
-
-def pattern_amb(letter):
-    return ".*"
-
-class Pattern(object):
-    def __init__(self, L):
-        self.L = L
-        self.type = ""
-    
-class PatternType(Pattern):
-    def __init__(self, *args, **kwargs):
-        pass
-
-def pattern_range(letter):
-    index = A.find(letter)
-    low = np.random.randint(0,index+1)
-    high = np.random.randint(index+1,len(A))
-    return f'[{A[low]}-{A[high]}]'
-
-def pattern_random_set(letter): # Fix duplicates
-    max_range = 7
-    pattern = np.array([letter])
-    if np.random.uniform() < 0.10:
-        max_range -= 1
-        pattern = np.append(pattern, "\\"+np.random.choice(list(puncs)))
-    Anp = np.array(list(A))
-    Anp = np.delete(Anp, ord(letter)-65)
-    np.random.shuffle(Anp)
-
-    randoms =  Anp[0:np.random.randint(1, max_range+1)]
-    pattern = np.append(pattern, randoms)
-    np.random.shuffle(pattern)
-    return f'[{"".join(list(pattern))}]'
-
-def get_pattern(matrix: np.ndarray, ix: int, iy: int) -> PatternVector:
-    # pass
-    for x, y in np.ndindex(matrix.shape):
-        col = matrix[:, y]
-        row = matrix[x, :]
-        intersect = row[np.in1d(row, col)]
-        index = np.argwhere(intersect==matrix[x, y])
-        intersect = np.delete(intersect, index)
-        print(matrix[x, y], intersect)
-    
-
-matrix = setup_grid("Twelve Latte".upper())
-
-print(matrix)
-
-print("---Generating Patterns---")
-# generate_pattern(matrix[:, 0])
-col = matrix[:, 0]
-row = matrix[0, :]
-
-get_pattern(matrix, 0, 0)
+print(shape)
+print("ROWS")
+for i in range(shape[0]):
+    a = puzzle.vectors[i]
+    print(a)
+    p_n = Pattern(a)
+    p_n.generate_patterns()
+    p_n.set_pattern()
+    row_patterns.append(p_n.get_pattern())
 
 
-print(pattern_random_set('T'))
-"""
-Progress on this file is on hold until the pattern module is completed. 
-A lot of what is being done here is already in the pattern module. 
-So this file will most likely be repurposed to a testing/example file.
-"""
+print("COLS")
+for i in range(shape[1]):
+    a = puzzle.vectors[:,i]
+    print(a)
+    p_n = Pattern(a)
+    p_n.generate_patterns()
+    p_n.set_pattern()
+    col_patterns.append(p_n.get_pattern())
+
+# 3D version can be implemented just by using the above for loop on the third dimension. 
+# There is no good way to visualize this right now, so I guess the next step forward would be to make a visualizer.
+# TODO: Make a good ass visualizer. And fix 1D and 2D cases LOL
+
+
+[print(r[0]) for r in row_patterns]
+[print(c[0]) for c in col_patterns]
