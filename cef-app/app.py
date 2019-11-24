@@ -27,7 +27,7 @@ def main():
     browser.SetClientHandler(LoadHandler())
     
     bindings = cef.JavascriptBindings()
-    bindings.SetFunction("get_puzzle", get_puzzle)
+    bindings.SetFunction("fetch_puzzle", get_puzzle)
     # bindings.SetFunction("py_callback", py_callback)
     browser.SetJavascriptBindings(bindings)
 
@@ -38,7 +38,7 @@ def main():
 
 def get_puzzle():
     l = np.array(list(ascii_uppercase) + list(ascii_uppercase)[::-1])
-    l = np.reshape(l[:27], (3,3,3))
+    l = np.reshape(l[:27], (3, 3, 3))    
     return l.tolist()
     
 
@@ -48,7 +48,7 @@ def get_puzzle():
 
 class LoadHandler(object):
     def OnLoadEnd(self, browser, **_):
-        browser.ExecuteFunction("load_puzzle", json.dumps(get_puzzle()))
+        browser.ExecuteFunction("fetch_puzzle", json.dumps(get_puzzle()))
 
 
 if __name__ == '__main__':
