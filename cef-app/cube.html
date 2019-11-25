@@ -1,111 +1,191 @@
 <html>
-   <head>
-      <title>My first Three.js app</title>
-      <style>
-      canvas { width: 100%; height: 100% }
-      </style>
-      <!-- <script src="js/three.min.js"></script> FIX ME! -->
-      <script src="https://threejs.org/build/three.min.js"></script>
-      <!-- <script src="js/OrbitControls.js"></script> FIX ME! -->
-      <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
-   </head>
-   <body>      
 
-      <script>  
+<head>
+    <title>My first Three.js app</title>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
+    <!-- <script src="js/three.min.js"></script> FIX ME! -->
+    <script src="http://127.0.0.1:8000/three.js"></script>
+    <!-- <script src="http://127.0.0.1:8000/three.module.js"></script> -->
+    <!-- <script src="js/OrbitControls.js"></script> FIX ME! -->
+    <script src="http://127.0.0.1:8000/OrbitControls.js"></script>
+</head>
 
-         function loadPuzzle() {
-          var grid = window.puzzle;
+<body>
 
-          var renderer = new THREE.WebGLRenderer();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-          document.body.appendChild(renderer.domElement);
+    <script>
+        function make_cube(scene, letter, x, y, z) {
+            var size = 10;
+            var buffer = 2;
 
-          var scene = new THREE.Scene();
+            var x = x * size;
+            var y = y * size;
+            var z = z * size;
 
-          var camera = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight, 1,10000);
+            var geometry = new THREE.BoxGeometry(size - buffer, size - buffer, size - buffer);
+            var material = new THREE.MeshBasicMaterial({
+                color: 0xc70039
+            });
 
-          var controls = new THREE.OrbitControls( camera, renderer.domElement );
 
-          class Cube{
+            var cube = new THREE.Mesh(geometry, material);
+            cube.letter = letter;
+            cube.material.transparent = true;
+            cube.material.opacity = 0.5;
+            cube.selected = false;
 
-          constructor(scene, letter, x, y, z) {
-            this.letter = letter;
-            this.size = 10;
-            this.buffer = 2;
+            cube.position.set(x, y, z);
+            scene.add(cube);
 
-            this.x = x * this.size;
-            this.y = y * this.size;
-            this.z = z * this.size;
+            var edges = new THREE.EdgesGeometry(geometry);
+            var line = new THREE.LineSegments(edges,
+                new THREE.LineBasicMaterial({
+                    color: 0xffffff,
+                    linewidth: 2
+                }));
+            line.position.set(x, y, z);
 
-            this.geometry = new THREE.BoxGeometry(this.size-this.buffer, this.size-this.buffer, this.size-this.buffer);
-            this.material = new THREE.MeshBasicMaterial({color: 0xc70039});
-            this.cube = new THREE.Mesh(this.geometry, this.material);
-            this.cube.material.transparent = true;
-            this.cube.material.opacity = 0.5;
-            
-            this.cube.position.set(this.x, this.y, this.z);
-            scene.add(this.cube);
-            
-            this.edges = new THREE.EdgesGeometry( this.geometry );
-            this.line = new THREE.LineSegments( this.edges,
-            new THREE.LineBasicMaterial( { color: 0xffffff, linewidth:2 } ) );
-            this.line.position.set(this.x, this.y, this.z);
-            
-            scene.add(this.line);
-            
-          }
+            scene.add(line);
+            return cube;
+        }
+    </script>
+    <script>
+        var raycaster = new THREE.Raycaster();
+        var mouse = new THREE.Vector2();
+        var renderer, camera, meshObjects;
+        var SELECTION;
 
-          }
-          var cubes = [];
-          console.log(grid);
-          for ( var i = 0; i < grid.length; i++ ){
-            if ( Array.isArray( grid[i] )){
-              var Y_array = grid[i];
-              
-              for ( var j = 0; j < Y_array.length; j++){
+        function loadPuzzle() {
+            var grid = window.puzzle;
 
-              if ( Array.isArray( Y_array[j] )){
-                var X_array = Y_array[j];
-                for ( var k = 0; k < X_array.length; k++){
-                  console.log(i+" "+j+" "+k)
-                  var cube = new Cube(scene, X_array[k], i, j, k);
-                  cubes.push(cube);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            var scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+
+            var controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+            var cubes = [];
+            console.log(grid);
+            for (var i = 0; i < grid.length; i++) {
+                if (Array.isArray(grid[i])) {
+                    var Y_array = grid[i];
+
+                    for (var j = 0; j < Y_array.length; j++) {
+
+                        if (Array.isArray(Y_array[j])) {
+                            var X_array = Y_array[j];
+                            for (var k = 0; k < X_array.length; k++) {
+                                // console.log(i + " " + j + " " + k)
+                                var cube = make_cube(scene, X_array[k], i, j, k);
+                                cubes.push(cube);
+                            }
+
+                        } else {
+                            // Use Z coord as 0
+                            var cube = make_cube(scene, Y_array[j], i, j, 0);
+                            cubes.push(cube);
+                        }
+                    }
+                } else {
+                    var cube = make_cube(scene, grid[i], i, 0, 0);
+                    cubes.push(cube);
                 }
-                
-              }else{
-                // Use Z coord as 0
-                var cube = new Cube(scene, Y_array[j], i, j, 0);
-                cubes.push(cube);
-              }
-              }
-            }else{
-              var cube = new Cube(scene, grid[i], i, 0, 0);
-              cubes.push(cube);
             }
-          }
-          window.cubes = cubes;
+            window.cubes = cubes;
 
-          camera.position.z = 100;
 
-          controls.update();
+            // See https://stackoverflow.com/questions/12800150/catch-the-click-event-on-a-specific-mesh-in-the-renderer
+            // Handle all clicks to determine of a three.js object was clicked and trigger its callback            
 
-          function render() {
-            requestAnimationFrame(render);
+
+            camera.position.z = 100;
+
             controls.update();
 
-            renderer.render(scene, camera);
-          }
-          render();
-         }
-      </script>
-      <script>
+            function render() {
+                requestAnimationFrame(render);
+                controls.update();
+                // camera.updateMatrixWorld();
 
+
+                renderer.render(scene, camera);
+            }
+            render();
+
+        }
+
+        function onDocumentMouseDown(event) {
+
+            event.preventDefault();
+
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            var intersects = raycaster.intersectObjects(cubes);
+            if (intersects.length > 0) {
+                console.log(intersects[0].object != SELECTION)
+                if (intersects[0].object != SELECTION) {
+                    if (SELECTION == null) { // Alternatively, we could initialize the first cube as selected and we don't have to deal with this case anymore. I like this approach more though
+                        console.log(intersects[0].object.letter)
+                        SELECTION = intersects[0].object
+                        SELECTION.selected = true;
+                        SELECTION.currentHex = SELECTION.material.color.getHex();
+                        SELECTION.material.color.setHex(0xFFAC03);
+                    } else {
+                        SELECTION.selected = false
+                        SELECTION.material.color.setHex(SELECTION.currentHex)
+                        SELECTION = null;
+
+                        console.log(intersects[0].object.letter)
+                        SELECTION = intersects[0].object
+                        SELECTION.selected = true;
+                        SELECTION.currentHex = SELECTION.material.color.getHex();
+                        SELECTION.material.color.setHex(0xFFAC03);
+                    }
+
+                }
+
+            }
+
+        }
+
+        document.addEventListener('mousedown', onDocumentMouseDown, false);
+    </script>
+    <script>
         function fetch_puzzle(data) {
-          window.puzzle = JSON.parse(data);
-          console.log("Value sent from Python:"+window.puzzle);
-          loadPuzzle();
-      }
+            window.puzzle = JSON.parse(data);
+            console.log("Value sent from Python:" + window.puzzle);
+            loadPuzzle();
+        }
+        window.puzzle = [
+            [
+                ['A', 'B', 'C'],
+                ['D', 'E', 'F'],
+                ['G', 'H', 'I']
+            ],
+            [
+                ['J', 'K', 'L'],
+                ['M', 'N', 'O'],
+                ['P', 'Q', 'R']
+            ],
+            [
+                ['S', 'T', 'U'],
+                ['V', 'W', 'X'],
+                ['Y', 'Z', 'Z']
+            ]
+        ]
+        loadPuzzle();
+    </script>
+</body>
 
-      </script>
-   </body>
 </html>

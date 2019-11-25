@@ -38,7 +38,7 @@ def main():
 
 def get_puzzle():
     l = np.array(list(ascii_uppercase) + list(ascii_uppercase)[::-1])
-    l = np.reshape(l[:27], (3, 3, 3))    
+    l = np.reshape(l[:27], (3, 3, 3))        
     return l.tolist()
     
 
