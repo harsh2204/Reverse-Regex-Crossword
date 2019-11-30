@@ -1,18 +1,57 @@
 <html>
 
-<head>
+<head>    
     <title>My first Three.js app</title>
-    <style>
+    <style>        
         canvas {
             width: 100%;
             height: 100%
         }
+        
+        body {
+            background-color: #4D5057
+        }
+        h1 {
+            text-transform: uppercase;
+        }
+
+        h1 {
+        color: #252525;
+        text-align: center;  
+        line-height: 1.5;
+        position: relative;
+        text-decoration: none;
+        font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        font-size: 36.px;
+        font-size: 5vw;
+        }
+        .input{
+            width: 70%;
+            margin: 0 auto;
+            font-size:1.4em;
+        }
+        input{
+            width:100%;
+            height: 80px;
+            text-align: center;
+            margin-top: 80px;
+            font-size: 1.5em;
+            background-color: transparent;
+            border: none;
+            border-top: 3px solid wheat;    
+            border-bottom: 3px solid wheat;
+            color:wheat;
+        }
+        
+     
     </style>
     <!-- <script src="js/three.min.js"></script> FIX ME! -->
     <script src="http://127.0.0.1:8000/three.js"></script>
+    <!-- <script src="http://127.0.0.1:8000/jquery-3.4.1.min.js"></script> -->
     <!-- <script src="http://127.0.0.1:8000/three.module.js"></script> -->
     <!-- <script src="js/OrbitControls.js"></script> FIX ME! -->
     <script src="http://127.0.0.1:8000/OrbitControls.js"></script>
+    <script src="http://127.0.0.1:8000/placeholdem.min.js"></script>
 </head>
 
 <body>
@@ -123,7 +162,9 @@
         }
 
         function onDocumentMouseDown(event) {
-
+            if (window.puzzle_loaded == false) {
+                return;
+            }
             event.preventDefault();
 
             mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
@@ -162,29 +203,53 @@
         document.addEventListener('mousedown', onDocumentMouseDown, false);
     </script>
     <script>
+        window.puzzle_loaded = false;
+
         function fetch_puzzle(data) {
             window.puzzle = JSON.parse(data);
             console.log("Value sent from Python:" + window.puzzle);
             loadPuzzle();
+            window.puzzle_loaded = true;
+        }
+
+        function set_puzzle() {
+
         }
         window.puzzle = [
-            [
-                ['A', 'B', 'C'],
-                ['D', 'E', 'F'],
-                ['G', 'H', 'I']
-            ],
-            [
-                ['J', 'K', 'L'],
-                ['M', 'N', 'O'],
-                ['P', 'Q', 'R']
-            ],
-            [
-                ['S', 'T', 'U'],
-                ['V', 'W', 'X'],
-                ['Y', 'Z', 'Z']
+                [
+                    ['A', 'B', 'C'],
+                    ['D', 'E', 'F'],
+                    ['G', 'H', 'I']
+                ],
+                [
+                    ['J', 'K', 'L'],
+                    ['M', 'N', 'O'],
+                    ['P', 'Q', 'R']
+                ],
+                [
+                    ['S', 'T', 'U'],
+                    ['V', 'W', 'X'],
+                    ['Y', 'Z', 'Z']
+                ]
             ]
-        ]
-        loadPuzzle();
+            // loadPuzzle();
+    </script>
+    <h1 align="center">Regex Crossword Generator</h1>
+    <div class="input">
+        <input type="text" class="words" placeholder="Enter a list of words"  />
+    </div>
+    <script>
+        Placeholdem( document.querySelectorAll( '[placeholder]' ) );
+        const node = document.getElementsByClassName("words")[0];
+        node.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                console.log("Got enter. Sending words")
+                values = node.value;
+                if (values.length >= 1){
+                    // Validate the input string and call the python function.
+                }
+            }
+        });
     </script>
 </body>
 

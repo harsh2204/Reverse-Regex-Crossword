@@ -19,8 +19,9 @@ class Puzzle(object):
             if not self.is_square(words):
                 print("Entered word(s) are not square")
                 return None
+            self.setup_grid()
         else:
-            self.setup_grid(use_default)
+            self.setup_grid(user_input=True, use_default=use_default)
 
     @staticmethod
     def print_empty_grid(x, y):
@@ -39,13 +40,17 @@ class Puzzle(object):
             print(" |")                        
             print("+"+"--+"*x)
 
-    def setup_grid(self, use_default=True):
-        words = input("Please enter the puzzle string(s), separated by commas (,) without extra white space if more than one.\n").split(',')
+    def setup_grid(self, user_input=False, use_default=True):
+        words = ""
+        if user_input:
+            words = input("Please enter the puzzle string(s), separated by commas (,) without extra white space if more than one.\n").split(',')
+        else:
+            words = self.words.split(",")    
         words = [w.upper() for w in words]
         if not self.is_square(words):
             print("String not compatible due to odd length:", len(words[0]))
             return
-        
+                
         deg = len(words)
                         
         s = words[0]
@@ -152,7 +157,8 @@ class Puzzle(object):
         # return an n dimensional array of letters
 
 if __name__ == "__main__":
-    g = Puzzle()
+    g = Puzzle('assume,food,national')
+    # g = Puzzle()
     
     # Print the sensible plane face
     # g.print_grid(g.vectors[:, :, 0])

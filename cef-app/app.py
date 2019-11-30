@@ -1,12 +1,12 @@
 # TODO: 
 # [x] Send relevant data from back-end to front-end js.
-# [ ] Get script files to load localy, either using the initialization parameters or running an internal server serving those files.
+# [x] Get script files to load localy, either using the initialization parameters or running an internal server serving those files.
 #       Have to implement either a resource handler or copy from https://github.com/rentouch/cefpython_old/blob/master/cefpython/cef3/linux/binaries_32bit/wxpython-response.py.
 #       ^(Keep in mind that this is not compatible on all OS'es)
 #  OR   Run a fast server locally, before starting the app to load the js files.
 #  OR   Make internet connection a requirement for the app.
 # 
-# [ ] Use that data to construct a N^M grid of puzzle
+# [x] Use that data to construct a N^M grid of puzzle
 # [ ] Add ability to change letters
 # [ ] Add letters look at camera always
 
@@ -48,7 +48,8 @@ def get_puzzle():
 
 class LoadHandler(object):
     def OnLoadEnd(self, browser, **_):
-        browser.ExecuteFunction("fetch_puzzle", json.dumps(get_puzzle()))
+        pass
+        # browser.ExecuteFunction("fetch_puzzle", json.dumps(get_puzzle()))
 
 
 if __name__ == '__main__':
