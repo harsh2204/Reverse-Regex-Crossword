@@ -1,5 +1,7 @@
 from grid import Puzzle
 from pattern import Pattern
+import numpy as np
+from pprint import pprint
 
 # puzzle = Puzzle('TEST,FOUR')
 puzzle = Puzzle('assume,foodee,nation')
@@ -9,10 +11,44 @@ shape = puzzle.vectors.shape
 row_patterns = []
 col_patterns = []
 bro_patterns = []
+f_patterns = []
 
 print(shape)
-print("ROWS")
+vectors = puzzle.vectors
+for s in range(vectors.shape[-1]):
+    transpose_matrix = np.roll(list(range(vectors.shape[-1])), s)
+    print(transpose_matrix)
+    patterns = []
+    for x in vectors.transpose(transpose_matrix):
+        print(x)
+        pats = []
+        for v in x:
+            pat = Pattern(v)
+            pat.generate_patterns()
+            pat.set_pattern()
+            pats.append(pat.get_pattern()[0])
+        patterns.append(pats)
+    print("*"*50)
+    f_patterns.append(patterns)
 
+print("*"*50)
+pprint(f_patterns)
+
+# These two are gud
+# position : 1, 1, 2
+print(f_patterns[0][1][1])
+print(vectors[1][1][-1])
+
+#round 2
+# position : 2, 1, 1
+print(f_patterns[1][2][1])
+#round 3
+# position : 1, 2, 1
+print(f_patterns[2][1][2])
+# Found that we're simpy shifting coords of the letter based on the direction which is the first index in the f_patterns matrix
+exit()
+
+print("ROWS")
 for a in puzzle.vectors.transpose(0, 1, 2):
     # print("*"*50)
     # print(a)

@@ -60,7 +60,6 @@ class Puzzle(object):
 
         if deg == 1 and force_1d:
             self.vectors = np.array(list(s)).reshape(1, 1, -1)
-            print(self.vectors)
             return
         if deg > 1:                                
             max_len = len(max(words, key=len))
@@ -145,10 +144,8 @@ class Puzzle(object):
 
         l_splitted = [re.findall('.{1,'+str(selection[-1])+'}', w) for w in words] #Still have no clue why I'm using a list for selection here...
 
-        print(deg)
         vectors = []
         for v in l_splitted:            
-            print(v)
             d_array = [list(x) for x in v]
             vectors.append(np.array(d_array))        
         
