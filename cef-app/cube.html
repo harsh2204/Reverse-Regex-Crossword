@@ -1,62 +1,61 @@
 <html>
 
-<head>    
-    <title>My first Three.js app</title>
-    <style>        
-        canvas {
+    <head>
+        <title>You dont see this!</title>
+        <!-- <style>
+            canvas {
             width: 100%;
-            height: 100%
-        }
-        
-        body {
-            background-color: #4D5057
-        }
-        h1 {
-            text-transform: uppercase;
-        }
+            height: 100%;
+            }
 
-        h1 {
-        color: #252525;
-        text-align: center;  
-        line-height: 1.5;
-        position: relative;
-        text-decoration: none;
-        font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-        font-size: 36.px;
-        font-size: 5vw;
-        }
-        .input{
+            body {
+            background-color: #4d5057;
+            }
+            h1 {
+            text-transform: uppercase;
+            }
+
+            h1 {
+            color: #252525;
+            text-align: center;
+            line-height: 1.5;
+            position: relative;
+            text-decoration: none;
+            font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+            font-size: 36px;
+            font-size: 5vw;
+            }
+            .input {
             width: 70%;
             margin: 0 auto;
-            font-size:1.4em;
-        }
-        input{
-            width:100%;
+            font-size: 1.4em;
+            }
+            input {
+            width: 100%;
             height: 80px;
             text-align: center;
             margin-top: 80px;
             font-size: 1.5em;
             background-color: transparent;
             border: none;
-            border-top: 3px solid wheat;    
+            border-top: 3px solid wheat;
             border-bottom: 3px solid wheat;
-            color:wheat;
-        }
-        
-     
-    </style>
-    <!-- <script src="js/three.min.js"></script> FIX ME! -->
-    <script src="http://127.0.0.1:8000/three.js"></script>
-    <!-- <script src="http://127.0.0.1:8000/jquery-3.4.1.min.js"></script> -->
-    <!-- <script src="http://127.0.0.1:8000/three.module.js"></script> -->
-    <!-- <script src="js/OrbitControls.js"></script> FIX ME! -->
-    <script src="http://127.0.0.1:8000/OrbitControls.js"></script>
-    <script src="http://127.0.0.1:8000/placeholdem.min.js"></script>
-</head>
+            color: wheat;
+            }
 
-<body>
+        </style> -->
+        <!-- <script src="js/three.min.js"></script> FIX ME! -->
+        <script src="http://127.0.0.1:8000/three.js"></script>
+        <!-- <script src="http://127.0.0.1:8000/jquery-3.4.1.min.js"></script> -->
+        <!-- <script src="http://127.0.0.1:8000/three.module.js"></script> -->
+        <!-- <script src="js/OrbitControls.js"></script> FIX ME! -->
+        <script src="http://127.0.0.1:8000/OrbitControls.js"></script>
+        <script src="http://127.0.0.1:8000/placeholdem.min.js"></script>
+    </head>
 
-    <script>
+    <body>
+
+        <script>
         function make_cube(scene, letter, x, y, z) {
             var size = 10;
             var buffer = 2;
@@ -65,11 +64,15 @@
             var y = y * size;
             var z = z * size;
 
+            var cube_color = 0xc70039;
+            if (x == 0 && y == 0 && z == 0){
+                cube_color = 0x32cd32;
+            }
             var geometry = new THREE.BoxGeometry(size - buffer, size - buffer, size - buffer);
             var material = new THREE.MeshBasicMaterial({
-                color: 0xc70039
+                color: cube_color 
             });
-
+           
 
             var cube = new THREE.Mesh(geometry, material);
             cube.letter = letter;
@@ -81,18 +84,25 @@
             scene.add(cube);
 
             var edges = new THREE.EdgesGeometry(geometry);
+
+            var line_color =  0xffffff;
+//            if (x == 0 && y == 0 && z == 0){
+//                line_color = 0x32CD32;
+//            }
+//          console.log(line_color, x, y, z);
             var line = new THREE.LineSegments(edges,
                 new THREE.LineBasicMaterial({
-                    color: 0xffffff,
+                    color: line_color,
                     linewidth: 2
                 }));
+
             line.position.set(x, y, z);
 
             scene.add(line);
             return cube;
         }
     </script>
-    <script>
+        <script>
         var raycaster = new THREE.Raycaster();
         var mouse = new THREE.Vector2();
         var renderer, camera, meshObjects;
@@ -152,7 +162,7 @@
             function render() {
                 requestAnimationFrame(render);
                 controls.update();
-                // camera.updateMatrixWorld();
+                //camera.updateMatrixWorld();
 
 
                 renderer.render(scene, camera);
@@ -202,7 +212,7 @@
 
         document.addEventListener('mousedown', onDocumentMouseDown, false);
     </script>
-    <script>
+        <script>
         window.puzzle_loaded = false;
 
         function fetch_puzzle(data) {
@@ -215,30 +225,37 @@
         function set_puzzle() {
 
         }
-        window.puzzle = [
-                [
-                    ['A', 'B', 'C'],
-                    ['D', 'E', 'F'],
-                    ['G', 'H', 'I']
-                ],
-                [
-                    ['J', 'K', 'L'],
-                    ['M', 'N', 'O'],
-                    ['P', 'Q', 'R']
-                ],
-                [
-                    ['S', 'T', 'U'],
-                    ['V', 'W', 'X'],
-                    ['Y', 'Z', 'Z']
-                ]
-            ]
-            // loadPuzzle();
+//        window.puzzle = [
+//                [
+//                    ['A', 'B', 'C'],
+//                    ['D', 'E', 'F'],
+//                    ['G', 'H', 'I']
+//                ],
+//                [
+//                    ['J', 'K', 'L'],
+//                    ['M', 'N', 'O'],
+//                    ['P', 'Q', 'R']
+//                ],
+//                [
+//                    ['S', 'T', 'U'],
+//                    ['V', 'W', 'X'],
+//                    ['Y', 'Z', 'Z']
+//                ]
+//            ]
+        window.puzzle = [ 'T', 'E', 'S', 'T'];
+        loadPuzzle();
+        window.puzzle_loaded = true;
+        console.log(window.pywebview.api);
+        console.log("MESSAGE!")
     </script>
-    <h1 align="center">Regex Crossword Generator</h1>
-    <div class="input">
-        <input type="text" class="words" placeholder="Enter a list of words"  />
-    </div>
-    <script>
+        <div id="homepage">
+            <h1 align="center">Regex Crossword Generator</h1>
+            <div class="input">
+                <input type="text" class="words" placeholder="Enter a list of
+                    words" />
+            </div>
+        </div>
+        <script>
         Placeholdem( document.querySelectorAll( '[placeholder]' ) );
         const node = document.getElementsByClassName("words")[0];
         node.addEventListener("keyup", function(event) {
@@ -247,10 +264,12 @@
                 values = node.value;
                 if (values.length >= 1){
                     // Validate the input string and call the python function.
+                    var x = document.getElementById("homepage");
+
                 }
             }
         });
     </script>
-</body>
+    </body>
 
 </html>
