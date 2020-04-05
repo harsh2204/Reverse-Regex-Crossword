@@ -1,7 +1,7 @@
 from grid import Puzzle
 from pattern import Pattern
 
-# puzzle = Puzzle()
+# puzzle = Puzzle('TEST,FOUR')
 puzzle = Puzzle('assume,foodee,nation')
 
 shape = puzzle.vectors.shape

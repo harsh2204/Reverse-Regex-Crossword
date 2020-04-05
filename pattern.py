@@ -232,7 +232,8 @@ class Pattern(object):
         return self.pattern
 
 if __name__ == "__main__":
-    p = Pattern(np.array(['A', 'B', 'C', 'D', 'E', 'F']))
+    # p = Pattern(np.array(['A', 'B', 'C', 'D', 'E', 'F']))
+    p = Pattern(np.array(['T', 'E', 'S', 'T']))
     p.generate_patterns()
     # pprint(p.patterns)
     p.set_pattern()

@@ -40,13 +40,16 @@ class Puzzle(object):
             print(" |")                        
             print("+"+"--+"*x)
 
-    def setup_grid(self, user_input=False, use_default=True):
+    def setup_grid(self, user_input=False, use_default=True, force_1d=True):
         words = ""
         if user_input:
             words = input("Please enter the puzzle string(s), separated by commas (,) without extra white space if more than one.\n").split(',')
         else:
-            words = self.words.split(",")    
-        words = [w.upper() for w in words]
+            words = self.words.split(",") 
+
+        if len(words) > 1:
+            words = [w.upper() for w in words]
+
         if not self.is_square(words):
             print("String not compatible due to odd length:", len(words[0]))
             return
@@ -55,6 +58,10 @@ class Puzzle(object):
                         
         s = words[0]
 
+        if deg == 1 and force_1d:
+            self.vectors = np.array(list(s)).reshape(1, 1, -1)
+            print(self.vectors)
+            return
         if deg > 1:                                
             max_len = len(max(words, key=len))
             min_len = len(min(words, key=len))
@@ -138,12 +145,16 @@ class Puzzle(object):
 
         l_splitted = [re.findall('.{1,'+str(selection[-1])+'}', w) for w in words] #Still have no clue why I'm using a list for selection here...
 
+        print(deg)
         vectors = []
         for v in l_splitted:            
+            print(v)
             d_array = [list(x) for x in v]
             vectors.append(np.array(d_array))        
         
-        self.vectors = np.dstack(vectors)
+        self.vectors = np.array(vectors)
+        if deg > 2:
+            self.vectors = np.dstack(vectors)
     
         # Setup the final grid with the correct dimensions and spaces.
         # We still need to split all the other vectors before we construct the final grid.
@@ -157,15 +168,16 @@ class Puzzle(object):
         # return an n dimensional array of letters
 
 if __name__ == "__main__":
-    g = Puzzle('assume,food,national')
+    g = Puzzle('TEST')
     # g = Puzzle()
     
     # Print the sensible plane face
     # g.print_grid(g.vectors[:, :, 0])
+    print(g.vectors, g.vectors.shape)
 
     # Print all the layers along the sensible plane
-    for i in range(g.vectors.shape[-1]):
-        g.print_grid(g.vectors[:, :, i])
-        print("="*25, "\n")
+    # for i in range(g.vectors.shape[-1]):
+    #     g.print_grid(g.vectors[:, :, i])
+    #     print("="*25, "\n")
     #assume,food,national
     #assume,foodee,nation
