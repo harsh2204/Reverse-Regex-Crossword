@@ -1,8 +1,7 @@
 <html>
-
-    <head>
-        <title>You dont see this!</title>
-        <!-- <style>
+  <head>
+    <title>You dont see this!</title>
+    <!-- <style>
             canvas {
             width: 100%;
             height: 100%;
@@ -44,231 +43,315 @@
             }
 
         </style> -->
-        <!-- <script src="js/three.min.js"></script> FIX ME! -->
-        <script src="http://127.0.0.1:8000/three.js"></script>
-        <!-- <script src="http://127.0.0.1:8000/jquery-3.4.1.min.js"></script> -->
-        <!-- <script src="http://127.0.0.1:8000/three.module.js"></script> -->
-        <!-- <script src="js/OrbitControls.js"></script> FIX ME! -->
-        <script src="http://127.0.0.1:8000/OrbitControls.js"></script>
-        <script src="http://127.0.0.1:8000/placeholdem.min.js"></script>
-    </head>
+    <!-- <script src="js/three.min.js"></script> FIX ME! -->
+    <script src="http://127.0.0.1:8000/three.js"></script>
+    <!-- <script src="http://127.0.0.1:8000/jquery-3.4.1.min.js"></script> -->
+    <!-- <script src="http://127.0.0.1:8000/three.module.js"></script> -->
+    <!-- <script src="js/OrbitControls.js"></script> FIX ME! -->
+    <script src="http://127.0.0.1:8000/OrbitControls.js"></script>
+    <script src="http://127.0.0.1:8000/placeholdem.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+    <!-- https://jsfiddle.net/b452w0p8/ -->
+  </head>
 
-    <body>
+  <body>
+    <script>
+      function make_cube(scene, letter, x, y, z) {
+        var size = 10;
+        var buffer = 2;
 
-        <script>
-        function make_cube(scene, letter, x, y, z) {
-            var size = 10;
-            var buffer = 2;
+        var x = x * size;
+        var y = y * size;
+        var z = z * size;
 
-            var x = x * size;
-            var y = y * size;
-            var z = z * size;
-
-            var cube_color = 0xc70039;
-            if (x == 0 && y == 0 && z == 0){
-                cube_color = 0x32cd32;
-            }
-            var geometry = new THREE.BoxGeometry(size - buffer, size - buffer, size - buffer);
-            var material = new THREE.MeshBasicMaterial({
-                color: cube_color 
-            });
-           
-
-            var cube = new THREE.Mesh(geometry, material);
-            cube.letter = letter;
-            cube.material.transparent = true;
-            cube.material.opacity = 0.5;
-            cube.selected = false;
-
-            cube.position.set(x, y, z);
-            scene.add(cube);
-
-            var edges = new THREE.EdgesGeometry(geometry);
-
-            var line_color =  0xffffff;
-//            if (x == 0 && y == 0 && z == 0){
-//                line_color = 0x32CD32;
-//            }
-//          console.log(line_color, x, y, z);
-            var line = new THREE.LineSegments(edges,
-                new THREE.LineBasicMaterial({
-                    color: line_color,
-                    linewidth: 2
-                }));
-
-            line.position.set(x, y, z);
-
-            scene.add(line);
-            return cube;
+        var cube_color = 0xc70039;
+        if (x == 0 && y == 0 && z == 0) {
+          cube_color = 0x32cd32;
         }
+        var geometry = new THREE.BoxGeometry(
+          size - buffer,
+          size - buffer,
+          size - buffer
+        );
+        var material = new THREE.MeshBasicMaterial({
+          color: cube_color,
+        });
+
+        var cube = new THREE.Mesh(geometry, material);
+        cube.letter = letter;
+        cube.input = "";
+        cube.material.transparent = true;
+        cube.material.opacity = 0.5;
+        cube.selected = false;
+
+        cube.position.set(x, y, z);
+        scene.add(cube);
+
+        var edges = new THREE.EdgesGeometry(geometry);
+
+        var line_color = 0xffffff;
+        //            if (x == 0 && y == 0 && z == 0){
+        //                line_color = 0x32CD32;
+        //            }
+        //          console.log(line_color, x, y, z);
+        var line = new THREE.LineSegments(
+          edges,
+          new THREE.LineBasicMaterial({
+            color: line_color,
+            linewidth: 2,
+          })
+        );
+
+        line.position.set(x, y, z);
+
+        scene.add(line);
+        return cube;
+      }
     </script>
-        <script>
-        var raycaster = new THREE.Raycaster();
-        var mouse = new THREE.Vector2();
-        var renderer, camera, meshObjects;
-        var SELECTION;
+    <script>
+      function create_text(cube) {
+        var textOptions = {
+          size: 8,
+          height: 4,
+          curveSegments: 5,
+          font: font,
+        };
+        var textGeom = new THREE.TextGeometry(cube.input, textOptions);
+        
+        var material = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          overdraw: true,
+        });
+        cube.text_mesh = new THREE.Mesh(textGeom, material);
+        textGeom.computeBoundingBox();
+        var textWidth = textGeom.boundingBox.max.x - textGeom.boundingBox.min.x;
+        var textHeight = textGeom.boundingBox.max.y - textGeom.boundingBox.min.y;
+        var textDepth = textGeom.boundingBox.max.z - textGeom.boundingBox.min.z;
+        console.log(cube.position)
+        cube.text_mesh.position.set(cube.position.x , cube.position.y, cube.position.z );
 
-        function loadPuzzle() {
-            var grid = window.puzzle;
+        cube.text_mesh.geometry.center()
+        cube.group = new THREE.Object3D();
+        cube.group.add(cube.text_mesh);
 
-            renderer = new THREE.WebGLRenderer();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+        console.log(cube.group);
+        window.scene.add(cube.group);
+      }
 
-            var scene = new THREE.Scene();
+      var font = undefined;
+      function loadFont() {
+        var loader = new THREE.FontLoader();
+        loader.load(
+          // resource URL
+          "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/fonts/helvetiker_bold.typeface.json",
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+          // onLoad callback
+          function (response) {
+            font = response;
+          },
 
-            var controls = new THREE.OrbitControls(camera, renderer.domElement);
+          // onProgress callback
+          function (xhr) {
+            console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+          },
 
-            var cubes = [];
-            console.log(grid);
-            for (var i = 0; i < grid.length; i++) {
-                if (Array.isArray(grid[i])) {
-                    var Y_array = grid[i];
-
-                    for (var j = 0; j < Y_array.length; j++) {
-
-                        if (Array.isArray(Y_array[j])) {
-                            var X_array = Y_array[j];
-                            for (var k = 0; k < X_array.length; k++) {
-                                // console.log(i + " " + j + " " + k)
-                                var cube = make_cube(scene, X_array[k], i, j, k);
-                                cubes.push(cube);
-                            }
-
-                        } else {
-                            // Use Z coord as 0
-                            var cube = make_cube(scene, Y_array[j], i, j, 0);
-                            cubes.push(cube);
-                        }
-                    }
-                } else {
-                    var cube = make_cube(scene, grid[i], i, 0, 0);
-                    cubes.push(cube);
-                }
-            }
-            window.cubes = cubes;
-
-
-            // See https://stackoverflow.com/questions/12800150/catch-the-click-event-on-a-specific-mesh-in-the-renderer
-            // Handle all clicks to determine of a three.js object was clicked and trigger its callback            
-
-
-            camera.position.z = 100;
-
-            controls.update();
-
-            function render() {
-                requestAnimationFrame(render);
-                controls.update();
-                //camera.updateMatrixWorld();
-
-
-                renderer.render(scene, camera);
-            }
-            render();
-
-        }
-
-        function onDocumentMouseDown(event) {
-            if (window.puzzle_loaded == false) {
-                return;
-            }
-            event.preventDefault();
-
-            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
-            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-
-            var intersects = raycaster.intersectObjects(cubes);
-            if (intersects.length > 0) {
-                console.log(intersects[0].object != SELECTION)
-                if (intersects[0].object != SELECTION) {
-                    if (SELECTION == null) { // Alternatively, we could initialize the first cube as selected and we don't have to deal with this case anymore. I like this approach more though
-                        console.log(intersects[0].object.letter)
-                        SELECTION = intersects[0].object
-                        SELECTION.selected = true;
-                        SELECTION.currentHex = SELECTION.material.color.getHex();
-                        SELECTION.material.color.setHex(0xFFAC03);
-                    } else {
-                        SELECTION.selected = false
-                        SELECTION.material.color.setHex(SELECTION.currentHex)
-                        SELECTION = null;
-
-                        console.log(intersects[0].object.letter)
-                        SELECTION = intersects[0].object
-                        SELECTION.selected = true;
-                        SELECTION.currentHex = SELECTION.material.color.getHex();
-                        SELECTION.material.color.setHex(0xFFAC03);
-                    }
-
-                }
-
-            }
-
-        }
-
-        document.addEventListener('mousedown', onDocumentMouseDown, false);
+          // onError callback
+          function (err) {
+            console.log("An error happened");
+          }
+        );
+      }
     </script>
-        <script>
-        window.puzzle_loaded = false;
 
-        function fetch_puzzle(data) {
-            window.puzzle = JSON.parse(data);
-            console.log("Value sent from Python:" + window.puzzle);
-            loadPuzzle();
-            window.puzzle_loaded = true;
+    <script>
+      var raycaster = new THREE.Raycaster();
+      var mouse = new THREE.Vector2();
+      var renderer, camera, meshObjects;
+      var SELECTION;
+
+      function loadPuzzle() {
+        var grid = window.puzzle;
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        var scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          1,
+          10000
+        );
+
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        var cubes = [];
+        console.log(grid);
+        for (var i = 0; i < grid.length; i++) {
+          if (Array.isArray(grid[i])) {
+            var Y_array = grid[i];
+
+            for (var j = 0; j < Y_array.length; j++) {
+              if (Array.isArray(Y_array[j])) {
+                var X_array = Y_array[j];
+                for (var k = 0; k < X_array.length; k++) {
+                  // console.log(i + " " + j + " " + k)
+                  var cube = make_cube(scene, X_array[k], i, j, k);
+                  cubes.push(cube);
+                }
+              } else {
+                // Use Z coord as 0
+                var cube = make_cube(scene, Y_array[j], i, j, 0);
+                cubes.push(cube);
+              }
+            }
+          } else {
+            var cube = make_cube(scene, grid[i], i, 0, 0);
+            cubes.push(cube);
+          }
         }
+        window.cubes = cubes;
+        window.scene = scene;
 
-        function set_puzzle() {
+        // See https://stackoverflow.com/questions/12800150/catch-the-click-event-on-a-specific-mesh-in-the-renderer
+        // Handle all clicks to determine of a three.js object was clicked and trigger its callback
 
+        camera.position.z = 100;
+
+        controls.update();
+
+        function render() {
+          requestAnimationFrame(render);
+          controls.update();
+          //camera.updateMatrixWorld();
+
+          for (var c of cubes){
+              if (typeof c.group != 'undefined' && c.group.children.length > 0){
+                  c.group.children[0].lookAt(camera.position);
+                  // c.group.children[0].translate(0.05);
+              }
+          }
+          renderer.render(scene, camera);
         }
-//        window.puzzle = [
-//                [
-//                    ['A', 'B', 'C'],
-//                    ['D', 'E', 'F'],
-//                    ['G', 'H', 'I']
-//                ],
-//                [
-//                    ['J', 'K', 'L'],
-//                    ['M', 'N', 'O'],
-//                    ['P', 'Q', 'R']
-//                ],
-//                [
-//                    ['S', 'T', 'U'],
-//                    ['V', 'W', 'X'],
-//                    ['Y', 'Z', 'Z']
-//                ]
-//            ]
-        window.puzzle = [ 'T', 'E', 'S', 'T'];
+        render();
+      }
+
+      function onDocumentMouseDown(event) {
+        if (window.puzzle_loaded == false) {
+          return;
+        }
+        event.preventDefault();
+
+        mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+        mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        var intersects = raycaster.intersectObjects(cubes);
+        if (intersects.length > 0) {
+          // console.log(intersects[0].object != SELECTION)
+          if (intersects[0].object != SELECTION) {
+            if (SELECTION == null) {
+              // Alternatively, we could initialize the first cube as selected and we don't have to deal with this case anymore. I like this approach more though
+              console.log(intersects[0].object.letter);
+              SELECTION = intersects[0].object;
+              SELECTION.selected = true;
+              SELECTION.currentHex = SELECTION.material.color.getHex();
+              SELECTION.material.color.setHex(0xffac03);
+            } else {
+              SELECTION.selected = false;
+              SELECTION.material.color.setHex(SELECTION.currentHex);
+              SELECTION = null;
+
+              console.log(intersects[0].object.letter);
+              SELECTION = intersects[0].object;
+              SELECTION.selected = true;
+              SELECTION.currentHex = SELECTION.material.color.getHex();
+              SELECTION.material.color.setHex(0xffac03);
+            }
+          }
+        }
+      }
+
+      document.addEventListener("mousedown", onDocumentMouseDown, false);
+
+      document.onkeydown = function (evt) {
+        var charCode = evt.which || evt.keyCode;
+        var charStr = String.fromCharCode(charCode);
+        if (/[a-zA-Z0-9-_]/.test(charStr) && SELECTION.selected == true || charCode == 8) {
+          if (charCode == 8){
+            SELECTION.group.remove(SELECTION.text_mesh);
+            SELECTION.input = ""
+            return;
+          }
+          if (SELECTION.input != "") {
+            SELECTION.group.remove(SELECTION.text_mesh);
+          }
+          SELECTION.input = charStr;
+          create_text(SELECTION);
+        }
+      };
+    </script>
+    <script>
+      window.puzzle_loaded = false;
+
+      loadFont();
+      function fetch_puzzle(data) {
+        window.puzzle = JSON.parse(data);
+        console.log("Value sent from Python:" + window.puzzle);
         loadPuzzle();
         window.puzzle_loaded = true;
-        console.log("MESSAGE!")
-    </script>
-        <div id="homepage">
-            <h1 align="center">Regex Crossword Generator</h1>
-            <div class="input">
-                <input type="text" class="words" placeholder="Enter a list of
-                    words" />
-            </div>
-        </div>
-        <script>
-        Placeholdem( document.querySelectorAll( '[placeholder]' ) );
-        const node = document.getElementsByClassName("words")[0];
-        node.addEventListener("keyup", function(event) {
-            if (event.key === "Enter") {
-                console.log("Got enter. Sending words")
-                values = node.value;
-                if (values.length >= 1){
-                    // Validate the input string and call the python function.
-                    var x = document.getElementById("homepage");
+      }
 
-                }
-            }
-        });
+      function set_puzzle() {}
+      //        window.puzzle = [
+      //                [
+      //                    ['A', 'B', 'C'],
+      //                    ['D', 'E', 'F'],
+      //                    ['G', 'H', 'I']
+      //                ],
+      //                [
+      //                    ['J', 'K', 'L'],
+      //                    ['M', 'N', 'O'],
+      //                    ['P', 'Q', 'R']
+      //                ],
+      //                [
+      //                    ['S', 'T', 'U'],
+      //                    ['V', 'W', 'X'],
+      //                    ['Y', 'Z', 'Z']
+      //                ]
+      //            ]
+      window.puzzle = ["T", "E", "S", "T"];
+      loadPuzzle();
+      window.puzzle_loaded = true;
+      console.log("MESSAGE!");
     </script>
-    </body>
-
+    <div id="homepage">
+      <h1 align="center">Regex Crossword Generator</h1>
+      <div class="input">
+        <input
+          type="text"
+          class="words"
+          placeholder="Enter a list of
+                    words"
+        />
+      </div>
+    </div>
+    <script>
+      Placeholdem(document.querySelectorAll("[placeholder]"));
+      const node = document.getElementsByClassName("words")[0];
+      node.addEventListener("keyup", function (event) {
+        if (event.key === "Enter") {
+          console.log("Got enter. Sending words");
+          values = node.value;
+          if (values.length >= 1) {
+            // Validate the input string and call the python function.
+            var x = document.getElementById("homepage");
+          }
+        }
+      });
+    </script>
+  </body>
 </html>
