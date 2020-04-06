@@ -111,26 +111,34 @@
     <script>
       function create_text(cube) {
         var textOptions = {
-          size: 8,
+          size: 7,
           height: 4,
-          curveSegments: 5,
+          curveSegments: 10,
           font: font,
         };
         var textGeom = new THREE.TextGeometry(cube.input, textOptions);
-        
+
         var material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
           overdraw: true,
+          // wireframe: true,
         });
+        // material.transparent=true;
+        // material.opacity = 0.8;
         cube.text_mesh = new THREE.Mesh(textGeom, material);
         textGeom.computeBoundingBox();
         var textWidth = textGeom.boundingBox.max.x - textGeom.boundingBox.min.x;
-        var textHeight = textGeom.boundingBox.max.y - textGeom.boundingBox.min.y;
+        var textHeight =
+          textGeom.boundingBox.max.y - textGeom.boundingBox.min.y;
         var textDepth = textGeom.boundingBox.max.z - textGeom.boundingBox.min.z;
-        console.log(cube.position)
-        cube.text_mesh.position.set(cube.position.x , cube.position.y, cube.position.z );
+        console.log(cube.position);
+        cube.text_mesh.position.set(
+          cube.position.x,
+          cube.position.y,
+          cube.position.z
+        );
 
-        cube.text_mesh.geometry.center()
+        cube.text_mesh.geometry.center();
         cube.group = new THREE.Object3D();
         cube.group.add(cube.text_mesh);
 
@@ -227,11 +235,11 @@
           controls.update();
           //camera.updateMatrixWorld();
 
-          for (var c of cubes){
-              if (typeof c.group != 'undefined' && c.group.children.length > 0){
-                  c.group.children[0].lookAt(camera.position);
-                  // c.group.children[0].translate(0.05);
-              }
+          for (var c of cubes) {
+            if (typeof c.group != "undefined" && c.group.children.length > 0 && window.lookatme == true) {
+              c.group.children[0].lookAt(camera.position);
+              // c.group.children[0].translate(0.05);
+            }
           }
           renderer.render(scene, camera);
         }
@@ -280,10 +288,17 @@
       document.onkeydown = function (evt) {
         var charCode = evt.which || evt.keyCode;
         var charStr = String.fromCharCode(charCode);
-        if (/[a-zA-Z0-9-_]/.test(charStr) && SELECTION.selected == true || charCode == 8) {
-          if (charCode == 8){
+        if (
+          (/[a-zA-Z0-9-_]/.test(charStr) && SELECTION.selected == true) ||
+          charCode == 8
+          // || charCode == 17
+        ) {
+          if (charCode == 17) {
+            console.log("HIDE ME!");
+          }
+          if (charCode == 8) {
             SELECTION.group.remove(SELECTION.text_mesh);
-            SELECTION.input = ""
+            SELECTION.input = "";
             return;
           }
           if (SELECTION.input != "") {
@@ -306,25 +321,26 @@
       }
 
       function set_puzzle() {}
-      //        window.puzzle = [
-      //                [
-      //                    ['A', 'B', 'C'],
-      //                    ['D', 'E', 'F'],
-      //                    ['G', 'H', 'I']
-      //                ],
-      //                [
-      //                    ['J', 'K', 'L'],
-      //                    ['M', 'N', 'O'],
-      //                    ['P', 'Q', 'R']
-      //                ],
-      //                [
-      //                    ['S', 'T', 'U'],
-      //                    ['V', 'W', 'X'],
-      //                    ['Y', 'Z', 'Z']
-      //                ]
-      //            ]
+      // window.puzzle = [
+      //   [
+      //     ["A", "B", "C"],
+      //     ["D", "E", "F"],
+      //     ["G", "H", "I"],
+      //   ],
+      //   [
+      //     ["J", "K", "L"],
+      //     ["M", "N", "O"],
+      //     ["P", "Q", "R"],
+      //   ],
+      //   [
+      //     ["S", "T", "U"],
+      //     ["V", "W", "X"],
+      //     ["Y", "Z", "Z"],
+      //   ],
+      // ];
       window.puzzle = ["T", "E", "S", "T"];
       loadPuzzle();
+      window.lookatme = true;
       window.puzzle_loaded = true;
       console.log("MESSAGE!");
     </script>
