@@ -120,7 +120,7 @@
 
         var material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
-          overdraw: true,
+          // overdraw: true,
           // wireframe: true,
         });
         // material.transparent=true;
@@ -245,6 +245,9 @@
         }
         render();
       }
+      function setPatternLabel(data){
+        console.log(data);
+      }
 
       function onDocumentMouseDown(event) {
         if (window.puzzle_loaded == false) {
@@ -285,7 +288,7 @@
           var x = SELECTION.position['x']/scale;
           var y = SELECTION.position['y']/scale;
           var z = SELECTION.position['z']/scale;
-          py_callback([x,y,z]);
+          var pat = py_callback([x,y,z], setPatternLabel);
         }
       }
 
@@ -319,35 +322,20 @@
       window.puzzle_loaded = false;
 
       loadFont();
-      function fetch_puzzle(data) {
-        window.puzzle = JSON.parse(data);
-        // console.log("Value sent from Python:" + window.puzzle);
+      function set_puzzle(data){
+        window.puzzle = data;
         loadPuzzle();
+        var x = document.getElementById("homepage");
+        x.hidden = true
         window.puzzle_loaded = true;
       }
 
-      // window.puzzle = [
-      //   [
-      //     ["A", "B", "C"],
-      //     ["D", "E", "F"],
-      //     ["G", "H", "I"],
-      //   ],
-      //   [
-      //     ["J", "K", "L"],
-      //     ["M", "N", "O"],
-      //     ["P", "Q", "R"],
-      //   ],
-      //   [
-      //     ["S", "T", "U"],
-      //     ["V", "W", "X"],
-      //     ["Y", "Z", "Z"],
-      //   ],
-      // ];
-      // window.puzzle = ["T", "E", "S", "T"];
-      // loadPuzzle();
+      function fetch_puzzle(string) {
+        // console.log("Value sent from Python:" + window.puzzle);
+        get_puzzle(string, set_puzzle);
+      }
+
       window.lookatme = true;
-      // window.puzzle_loaded = true;
-      console.log("MESSAGE!");
     </script>
     <div id="homepage">
       <h1 align="center">Regex Crossword Generator</h1>
@@ -355,8 +343,7 @@
         <input
           type="text"
           class="words"
-          placeholder="Enter a list of
-                    words"
+          placeholder="Enter a list of words"
         />
       </div>
     </div>
@@ -369,7 +356,7 @@
           values = node.value;
           if (values.length >= 1) {
             // Validate the input string and call the python function.
-            var x = document.getElementById("homepage");
+            fetch_puzzle(values);
           }
         }
       });

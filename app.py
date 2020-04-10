@@ -12,19 +12,42 @@
 # [ ] Connect frontend and backend
 
 from cefpython3 import cefpython as cef
+import platform
+import ctypes
 from string import ascii_uppercase
+from src.grid import Puzzle
+from src import regex
 import numpy as np
 import json
 
+puzzle = []
+patterns = []
+
 def main():
     cef.Initialize()
+    window_info = cef.WindowInfo()
+    parent_handle = 0
+    # This call has effect only on Mac and Linux.
+    # All rect coordinates are applied including X and Y parameters.
+    window_info.SetAsChild(parent_handle, [0, 0, 1720, 1440])
+
     browser = cef.CreateBrowserSync(url=cef.GetDataUrl(open('cube.html', 'r').read()),
+                                    window_info=window_info,
                                     window_title="Javascript Bindings",
                                     settings={
                                         'universal_access_from_file_urls_allowed':  True,
                                         'file_access_from_file_urls_allowed':       True
                                     })
                                     
+    if platform.system() == "Windows":
+        window_handle = browser.GetOuterWindowHandle()
+        insert_after_handle = 0
+        # X and Y parameters are ignored by setting the SWP_NOMOVE flag
+        SWP_NOMOVE = 0x0002
+        # noinspection PyUnresolvedReferences
+        ctypes.windll.user32.SetWindowPos(window_handle, insert_after_handle,
+                                          0, 0, 1720, 1440, SWP_NOMOVE)
+
     browser.SetClientHandler(LoadHandler())
     
     bindings = cef.JavascriptBindings()
@@ -36,19 +59,24 @@ def main():
     del browser
     cef.Shutdown()
 
-def py_callback(data):
-    print(data)
+def py_callback(data, callback):
+    global puzzle, patterns
+    callback.Call(regex.get_patterns(data, patterns))
 
-def get_puzzle():
-    l = np.array(list(ascii_uppercase) + list(ascii_uppercase)[::-1])
-    l = np.reshape(l[:27], (3, 3, 3))        
-    return json.dumps(l.tolist())
+def get_puzzle(string, callback):
+    global puzzle, patterns
+    puzzle = Puzzle('assume,foodee,nation')
+    vectors = puzzle.vectors
+    print(vectors)
+    patterns = regex.generate_patterns(vectors)
+    print(patterns)
+    callback.Call(vectors.tolist())
     
 
 
 class LoadHandler(object):
     def OnLoadEnd(self, browser, **_):
-        browser.ExecuteFunction("fetch_puzzle", get_puzzle())
+        # browser.ExecuteFunction("fetch_puzzle")
         pass
 
 

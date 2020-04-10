@@ -1,5 +1,5 @@
-from grid import Puzzle
-from pattern import Pattern
+# from grid import Puzzle
+from .pattern import Pattern
 import numpy as np
 from pprint import pprint
 
@@ -53,13 +53,13 @@ print(f_patterns[2][1][2])
 
 # Found that we're simpy shifting coords of the letter based on the direction which is the first index in the f_patterns matrix, 
 # this comes as a result of transposing the matrix by rolling the transpose matrix in the generate function
-print(vectors[0][0][1])
+
 def get_patterns(coords, patterns):
     diff = len(coords) - len(patterns) # I don't know why we need this, but it makes things work.
     N = len(coords)
     # N = len(patterns)
     pcoords = [np.roll(coords, i)[:N-1] for i in range(N-diff)] # construct the direction vector coordinates for each pattern vector
-    print(pcoords)
+    # print(pcoords)
     patterns = [patterns[x][i][j] for x, (i, j) in enumerate(pcoords)]
     return patterns
 
