@@ -7,8 +7,9 @@
 #  OR   Make internet connection a requirement for the app.
 # 
 # [x] Use that data to construct a N^M grid of puzzle
-# [ ] Add ability to change letters
-# [ ] Add letters look at camera always
+# [x] Add ability to change letters
+# [x] Add letters look at camera always
+# [ ] Connect frontend and backend
 
 from cefpython3 import cefpython as cef
 from string import ascii_uppercase
@@ -27,29 +28,28 @@ def main():
     browser.SetClientHandler(LoadHandler())
     
     bindings = cef.JavascriptBindings()
-    bindings.SetFunction("fetch_puzzle", get_puzzle)
-    # bindings.SetFunction("py_callback", py_callback)
+    bindings.SetFunction("get_puzzle", get_puzzle)
+    bindings.SetFunction("py_callback", py_callback)
     browser.SetJavascriptBindings(bindings)
 
     cef.MessageLoop()
     del browser
     cef.Shutdown()
 
+def py_callback(data):
+    print(data)
 
 def get_puzzle():
     l = np.array(list(ascii_uppercase) + list(ascii_uppercase)[::-1])
     l = np.reshape(l[:27], (3, 3, 3))        
-    return l.tolist()
+    return json.dumps(l.tolist())
     
 
 
-# def py_callback(value):
-#     print("Value sent from Javascript: "+value)
-
 class LoadHandler(object):
     def OnLoadEnd(self, browser, **_):
+        browser.ExecuteFunction("fetch_puzzle", get_puzzle())
         pass
-        # browser.ExecuteFunction("fetch_puzzle", json.dumps(get_puzzle()))
 
 
 if __name__ == '__main__':

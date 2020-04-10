@@ -1,7 +1,7 @@
 <html>
   <head>
     <title>You dont see this!</title>
-    <!-- <style>
+    <style>
             canvas {
             width: 100%;
             height: 100%;
@@ -42,7 +42,7 @@
             color: wheat;
             }
 
-        </style> -->
+        </style>
     <!-- <script src="js/three.min.js"></script> FIX ME! -->
     <script src="http://127.0.0.1:8000/three.js"></script>
     <!-- <script src="http://127.0.0.1:8000/jquery-3.4.1.min.js"></script> -->
@@ -280,6 +280,12 @@
               SELECTION.material.color.setHex(0xffac03);
             }
           }
+          var scale = 10;
+          console.log(SELECTION.position['x']/scale, SELECTION.position['y']/scale, SELECTION.position['z']/scale)
+          var x = SELECTION.position['x']/scale;
+          var y = SELECTION.position['y']/scale;
+          var z = SELECTION.position['z']/scale;
+          py_callback([x,y,z]);
         }
       }
 
@@ -315,12 +321,11 @@
       loadFont();
       function fetch_puzzle(data) {
         window.puzzle = JSON.parse(data);
-        console.log("Value sent from Python:" + window.puzzle);
+        // console.log("Value sent from Python:" + window.puzzle);
         loadPuzzle();
         window.puzzle_loaded = true;
       }
 
-      function set_puzzle() {}
       // window.puzzle = [
       //   [
       //     ["A", "B", "C"],
@@ -338,10 +343,10 @@
       //     ["Y", "Z", "Z"],
       //   ],
       // ];
-      window.puzzle = ["T", "E", "S", "T"];
-      loadPuzzle();
+      // window.puzzle = ["T", "E", "S", "T"];
+      // loadPuzzle();
       window.lookatme = true;
-      window.puzzle_loaded = true;
+      // window.puzzle_loaded = true;
       console.log("MESSAGE!");
     </script>
     <div id="homepage">
