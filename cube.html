@@ -60,9 +60,9 @@
         var size = 10;
         var buffer = 2;
 
-        var x = x * size;
-        var y = y * size;
-        var z = z * size;
+        var x = - x * size;
+        var y = - y * size;
+        var z = - z * size;
 
         var cube_color = 0xc70039;
         if (x == 0 && y == 0 && z == 0) {
@@ -109,6 +109,29 @@
       }
     </script>
     <script>
+      function makeTextSprite( message , direction, coords, scale=10)
+      {
+        var textOptions = {
+          size: 2,
+          height: 0.1,
+          font: font,
+        };
+        var textGeom = new THREE.TextGeometry( message, textOptions );
+        textGeom.computeBoundingBox();
+        var textWidth = textGeom.boundingBox.max.x - textGeom.boundingBox.min.x;
+        var material = new THREE.MeshBasicMaterial({ color: 0xffffff});
+        
+        var mesh = new THREE.Mesh(textGeom, material);
+        if (scale > 0){
+          coords[direction] += textWidth + scale;
+        }else {
+          coords[direction] += -scale;
+        }
+        mesh.position.set(coords[0], coords[1], coords[2]);
+        return mesh
+        
+      }
+
       function create_text(cube) {
         var textOptions = {
           size: 7,
@@ -220,6 +243,61 @@
             cubes.push(cube);
           }
         }
+
+        window.labels = []
+        var a = 0;
+        for (p of window.patterns[0]) {
+          var b = 0;
+          for (k of p){
+            var sp = makeTextSprite(k, 2, [-a*10, -b*10, 0], scale=5)
+            sp.rotateY(Math.PI/2)
+            labels.push(sp);
+            scene.add(sp)
+            b++;
+          }
+          a++;
+        }
+        a = 0;
+        for (p of window.patterns[1]) {
+          var b = 0;
+          for (k of p){
+            var sp = makeTextSprite(k, 1, [-b*10, 0, -a*10], scale=-5)
+            sp.rotateY(Math.PI/2)
+            sp.rotateZ(Math.PI/2)
+            labels.push(sp);
+            scene.add(sp)
+            b++;
+          }
+          a++;
+        }
+
+
+        a = 0;
+        for (p of window.patterns[2]) {
+          var b = 0;
+          for (k of p){
+            var sp = makeTextSprite(k, 0, [0, -a*10, -b*10], scale= -8)
+            // sp.rotateY(Math.PI/2)
+            // sp.rotateZ(Math.PI/2)
+            labels.push(sp);
+            scene.add(sp)
+            b++;
+          }
+          a++;
+        }
+
+        function set_pattern(data, i) { 
+          var patterns = [...data]; 
+          cubes[i].patterns = patterns;
+        }
+        var scale = 10;
+        for (var i = 0; i < cubes.length; i++){
+          var c = cubes[i];
+          var x = - c.position['x']/scale;
+          var y = - c.position['y']/scale;
+          var z = - c.position['z']/scale;
+          load_patterns([x,y,z], i, set_pattern);
+        }
         window.cubes = cubes;
         window.scene = scene;
 
@@ -247,6 +325,14 @@
       }
       function setPatternLabel(data){
         console.log(data);
+        var cube = window.SELECTION;
+        var patterns = new THREE.Object3D();
+        for (pat of data){
+          var sprite = makeTextSprite(pat, cube);
+          patterns.add(sprite);
+        }
+        window.scene.add(patterns);
+        cube.patterns = patterns; 
       }
 
       function onDocumentMouseDown(event) {
@@ -266,7 +352,7 @@
           if (intersects[0].object != SELECTION) {
             if (SELECTION == null) {
               // Alternatively, we could initialize the first cube as selected and we don't have to deal with this case anymore. I like this approach more though
-              console.log(intersects[0].object.letter);
+              console.log(intersects[0].object.letter, intersects[0].object.position);
               SELECTION = intersects[0].object;
               SELECTION.selected = true;
               SELECTION.currentHex = SELECTION.material.color.getHex();
@@ -276,19 +362,16 @@
               SELECTION.material.color.setHex(SELECTION.currentHex);
               SELECTION = null;
 
-              console.log(intersects[0].object.letter);
+              // console.log(intersects[0].object.letter);
+              console.log(intersects[0].object.letter, intersects[0].object.position);
               SELECTION = intersects[0].object;
               SELECTION.selected = true;
               SELECTION.currentHex = SELECTION.material.color.getHex();
               SELECTION.material.color.setHex(0xffac03);
             }
           }
-          var scale = 10;
-          console.log(SELECTION.position['x']/scale, SELECTION.position['y']/scale, SELECTION.position['z']/scale)
-          var x = SELECTION.position['x']/scale;
-          var y = SELECTION.position['y']/scale;
-          var z = SELECTION.position['z']/scale;
-          var pat = py_callback([x,y,z], setPatternLabel);
+          //DISPLAY PATTERN HERE
+          console.log(SELECTION.patterns[2]);
         }
       }
 
@@ -298,7 +381,7 @@
         var charCode = evt.which || evt.keyCode;
         var charStr = String.fromCharCode(charCode);
         if (
-          (/[a-zA-Z0-9-_]/.test(charStr) && SELECTION.selected == true) ||
+          (/[a-zA-Z0-9-_]/.test(charStr) && window.puzzle_loaded == true && SELECTION.selected == true) ||
           charCode == 8
           // || charCode == 17
         ) {
@@ -322,8 +405,9 @@
       window.puzzle_loaded = false;
 
       loadFont();
-      function set_puzzle(data){
-        window.puzzle = data;
+      function set_puzzle(vectors, patterns){
+        window.patterns = patterns;
+        window.puzzle = vectors;
         loadPuzzle();
         var x = document.getElementById("homepage");
         x.hidden = true

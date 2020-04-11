@@ -15,6 +15,7 @@ from cefpython3 import cefpython as cef
 import platform
 import ctypes
 from string import ascii_uppercase
+from pprint import pprint
 from src.grid import Puzzle
 from src import regex
 import numpy as np
@@ -52,16 +53,17 @@ def main():
     
     bindings = cef.JavascriptBindings()
     bindings.SetFunction("get_puzzle", get_puzzle)
-    bindings.SetFunction("py_callback", py_callback)
+    bindings.SetFunction("load_patterns", load_patterns)
     browser.SetJavascriptBindings(bindings)
 
     cef.MessageLoop()
     del browser
     cef.Shutdown()
 
-def py_callback(data, callback):
+def load_patterns(data, i, callback):
     global puzzle, patterns
-    callback.Call(regex.get_patterns(data, patterns))
+    callback.Call(regex.get_patterns(data, patterns), i)
+    # callback.Call(patterns)
 
 def get_puzzle(string, callback):
     global puzzle, patterns
@@ -69,8 +71,8 @@ def get_puzzle(string, callback):
     vectors = puzzle.vectors
     print(vectors)
     patterns = regex.generate_patterns(vectors)
-    print(patterns)
-    callback.Call(vectors.tolist())
+    pprint(patterns)
+    callback.Call(vectors.tolist(), patterns)
     
 
 
