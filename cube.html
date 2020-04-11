@@ -66,7 +66,7 @@
 
         var cube_color = 0xc70039;
         if (x == 0 && y == 0 && z == 0) {
-          cube_color = 0x32cd32;
+          cube_color = 0x48D1CC;
         }
         var geometry = new THREE.BoxGeometry(
           size - buffer,
@@ -90,10 +90,6 @@
         var edges = new THREE.EdgesGeometry(geometry);
 
         var line_color = 0xffffff;
-        //            if (x == 0 && y == 0 && z == 0){
-        //                line_color = 0x32CD32;
-        //            }
-        //          console.log(line_color, x, y, z);
         var line = new THREE.LineSegments(
           edges,
           new THREE.LineBasicMaterial({
@@ -105,6 +101,7 @@
         line.position.set(x, y, z);
 
         scene.add(line);
+        cube.patterns = [];
         return cube;
       }
     </script>
@@ -164,7 +161,7 @@
         cube.text_mesh.geometry.center();
         cube.group = new THREE.Object3D();
         cube.group.add(cube.text_mesh);
-
+        
         console.log(cube.group);
         window.scene.add(cube.group);
       }
@@ -244,15 +241,16 @@
           }
         }
 
-        window.labels = []
         var a = 0;
         for (p of window.patterns[0]) {
           var b = 0;
           for (k of p){
             var sp = makeTextSprite(k, 2, [-a*10, -b*10, 0], scale=5)
             sp.rotateY(Math.PI/2)
-            labels.push(sp);
-            scene.add(sp)
+            for (var c = 0; c < window.patterns[1].length; c++){
+              var cu = cubes[(a*window.patterns.length + b)*p.length + c]
+              cu.patterns.push(sp);
+            }
             b++;
           }
           a++;
@@ -261,11 +259,13 @@
         for (p of window.patterns[1]) {
           var b = 0;
           for (k of p){
-            var sp = makeTextSprite(k, 1, [-b*10, 0, -a*10], scale=-5)
+            var sp = makeTextSprite(k, 1, [-b*10,  0, -a*10], scale=5)
             sp.rotateY(Math.PI/2)
-            sp.rotateZ(Math.PI/2)
-            labels.push(sp);
-            scene.add(sp)
+            sp.rotateZ(-Math.PI/2)
+            for (var c = 0; c < window.patterns[2].length; c++){
+              var cu = cubes[a + b*window.patterns.length*window.patterns[1].length + c * window.patterns[1].length]
+              cu.patterns.push(sp);
+            }
             b++;
           }
           a++;
@@ -276,34 +276,19 @@
         for (p of window.patterns[2]) {
           var b = 0;
           for (k of p){
-            var sp = makeTextSprite(k, 0, [0, -a*10, -b*10], scale= -8)
-            // sp.rotateY(Math.PI/2)
-            // sp.rotateZ(Math.PI/2)
-            labels.push(sp);
-            scene.add(sp)
+            var sp = makeTextSprite(k, 0, [0, -a*10, -b*10], scale=5)
+            sp.rotateY(Math.PI)
+            for (var c = 0; c < window.patterns[0].length; c++){
+              var cu = cubes[a*p.length + b + c * window.patterns.length*p.length]
+              cu.patterns.push(sp);
+            }
             b++;
           }
           a++;
         }
 
-        function set_pattern(data, i) { 
-          var patterns = [...data]; 
-          cubes[i].patterns = patterns;
-        }
-        var scale = 10;
-        for (var i = 0; i < cubes.length; i++){
-          var c = cubes[i];
-          var x = - c.position['x']/scale;
-          var y = - c.position['y']/scale;
-          var z = - c.position['z']/scale;
-          load_patterns([x,y,z], i, set_pattern);
-        }
         window.cubes = cubes;
         window.scene = scene;
-
-        // See https://stackoverflow.com/questions/12800150/catch-the-click-event-on-a-specific-mesh-in-the-renderer
-        // Handle all clicks to determine of a three.js object was clicked and trigger its callback
-
         camera.position.z = 100;
 
         controls.update();
@@ -311,28 +296,34 @@
         function render() {
           requestAnimationFrame(render);
           controls.update();
-          //camera.updateMatrixWorld();
 
           for (var c of cubes) {
             if (typeof c.group != "undefined" && c.group.children.length > 0 && window.lookatme == true) {
               c.group.children[0].lookAt(camera.position);
+              
               // c.group.children[0].translate(0.05);
             }
+            // AVOID THE FOLLOWING!
+            // if (typeof c.patterns != "undefined" && c.patterns.length > 0){
+            //   for (p of c.patterns){
+            //     p.lookAt(camera.position);
+            //   }
+            // }
           }
           renderer.render(scene, camera);
         }
         render();
       }
-      function setPatternLabel(data){
-        console.log(data);
-        var cube = window.SELECTION;
-        var patterns = new THREE.Object3D();
-        for (pat of data){
-          var sprite = makeTextSprite(pat, cube);
-          patterns.add(sprite);
+
+      function hidePatterns(c){
+        for (pat of c.patterns){
+          window.scene.remove(pat);
         }
-        window.scene.add(patterns);
-        cube.patterns = patterns; 
+      }
+      function showPatterns(c){
+        for (pat of c.patterns){
+          window.scene.add(pat);
+        }
       }
 
       function onDocumentMouseDown(event) {
@@ -352,26 +343,27 @@
           if (intersects[0].object != SELECTION) {
             if (SELECTION == null) {
               // Alternatively, we could initialize the first cube as selected and we don't have to deal with this case anymore. I like this approach more though
-              console.log(intersects[0].object.letter, intersects[0].object.position);
+              console.log(intersects[0].object.letter);
               SELECTION = intersects[0].object;
               SELECTION.selected = true;
               SELECTION.currentHex = SELECTION.material.color.getHex();
               SELECTION.material.color.setHex(0xffac03);
+              showPatterns(SELECTION);
             } else {
               SELECTION.selected = false;
               SELECTION.material.color.setHex(SELECTION.currentHex);
+              hidePatterns(SELECTION);
               SELECTION = null;
 
               // console.log(intersects[0].object.letter);
-              console.log(intersects[0].object.letter, intersects[0].object.position);
+              console.log(intersects[0].object.letter);
               SELECTION = intersects[0].object;
               SELECTION.selected = true;
               SELECTION.currentHex = SELECTION.material.color.getHex();
               SELECTION.material.color.setHex(0xffac03);
+              showPatterns(SELECTION);
             }
           }
-          //DISPLAY PATTERN HERE
-          console.log(SELECTION.patterns[2]);
         }
       }
 
@@ -390,11 +382,13 @@
           }
           if (charCode == 8) {
             SELECTION.group.remove(SELECTION.text_mesh);
+            window.scene.remove(SELECTION.group);
             SELECTION.input = "";
             return;
           }
           if (SELECTION.input != "") {
             SELECTION.group.remove(SELECTION.text_mesh);
+            window.scene.remove(SELECTION.group);
           }
           SELECTION.input = charStr;
           create_text(SELECTION);
@@ -415,7 +409,6 @@
       }
 
       function fetch_puzzle(string) {
-        // console.log("Value sent from Python:" + window.puzzle);
         get_puzzle(string, set_puzzle);
       }
 
@@ -439,7 +432,6 @@
           console.log("Got enter. Sending words");
           values = node.value;
           if (values.length >= 1) {
-            // Validate the input string and call the python function.
             fetch_puzzle(values);
           }
         }

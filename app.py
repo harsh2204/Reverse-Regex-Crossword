@@ -67,7 +67,8 @@ def load_patterns(data, i, callback):
 
 def get_puzzle(string, callback):
     global puzzle, patterns
-    puzzle = Puzzle('assume,foodee,nation')
+    # puzzle = Puzzle('assume,foodee,nation')
+    puzzle = Puzzle(string)
     vectors = puzzle.vectors
     print(vectors)
     patterns = regex.generate_patterns(vectors)
