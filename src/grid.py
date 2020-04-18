@@ -52,6 +52,8 @@ class Puzzle(object):
 
         if not self.is_square(words):
             print("String not compatible due to odd length:", len(words[0]))
+            self.vectors = np.array([list(w) for w in words])
+            self.vectors = np.dstack(self.vectors)
             return
                 
         deg = len(words)
@@ -165,7 +167,7 @@ class Puzzle(object):
         # return an n dimensional array of letters
 
 if __name__ == "__main__":
-    g = Puzzle('TEST')
+    g = Puzzle('harsh,gupta,test1')
     # g = Puzzle()
     
     # Print the sensible plane face

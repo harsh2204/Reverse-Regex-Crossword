@@ -65,3 +65,14 @@ def get_patterns(coords, patterns):
 
 # p = get_patterns([0, 0, 0], f_patterns)
 # pprint(p)
+
+def translate_coord(coords, patterns):
+    diff = len(coords) - len(patterns) # I don't know why we need this, but it makes things work.
+    N = len(coords)
+    # N = len(patterns)
+    pcoords = [np.roll(coords, i)[:N-1] for i in range(N-diff)] # construct the direction vector coordinates for each pattern vector
+    # print(pcoords)
+    patterns = [[x, int(i), int(j)] for x, (i, j) in enumerate(pcoords)]
+    return patterns
+
+# write a translation function to convert 3d coordinates to index of the pattern array

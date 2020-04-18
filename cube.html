@@ -85,6 +85,12 @@
         cube.selected = false;
 
         cube.position.set(x, y, z);
+        cube.size = size;        
+        function getCoordinates () {
+          return [-this.position.x/this.size, -this.position.y/this.size, -this.position.z/this.size]; 
+        }
+        cube.getCoordinates = getCoordinates;
+
         scene.add(cube);
 
         var edges = new THREE.EdgesGeometry(geometry);
@@ -151,7 +157,7 @@
         var textHeight =
           textGeom.boundingBox.max.y - textGeom.boundingBox.min.y;
         var textDepth = textGeom.boundingBox.max.z - textGeom.boundingBox.min.z;
-        console.log(cube.position);
+        // console.log(cube.position);
         cube.text_mesh.position.set(
           cube.position.x,
           cube.position.y,
@@ -320,7 +326,14 @@
           window.scene.remove(pat);
         }
       }
+      function doSomethingWithPattern(data){
+        for (d of data){
+          console.log(window.patterns[d[0]][d[1]][d[2]]);
+        }
+      }
       function showPatterns(c){
+        let coords = c.getCoordinates();
+        translate_c(coords, doSomethingWithPattern);
         for (pat of c.patterns){
           window.scene.add(pat);
         }

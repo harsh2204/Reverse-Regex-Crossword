@@ -54,11 +54,17 @@ def main():
     bindings = cef.JavascriptBindings()
     bindings.SetFunction("get_puzzle", get_puzzle)
     bindings.SetFunction("load_patterns", load_patterns)
+    bindings.SetFunction("translate_c", translate)
     browser.SetJavascriptBindings(bindings)
 
     cef.MessageLoop()
     del browser
     cef.Shutdown()
+
+def translate(coords, callback):
+    global puzzle, patterns
+    t_c = regex.translate_coord(coords, patterns)
+    callback.Call(t_c)
 
 def load_patterns(data, i, callback):
     global puzzle, patterns
@@ -69,6 +75,7 @@ def get_puzzle(string, callback):
     global puzzle, patterns
     # puzzle = Puzzle('assume,foodee,nation')
     puzzle = Puzzle(string)
+    print(puzzle)
     vectors = puzzle.vectors
     print(vectors)
     patterns = regex.generate_patterns(vectors)
