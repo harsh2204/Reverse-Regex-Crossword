@@ -1,6 +1,6 @@
 # Reverse-Regex-Crossword
 
-A 3D implemetation of regex crossword with a rule-based regex generator that uses a cef-python in the back-end with three.js for the front-end along with the generator writting in vanilla python.
+A 3D implemetation of [regex crossword](https://regexcrossword.com/) with a rule-based regex generator that uses a cef-python in the back-end with three.js for the front-end along with the generator writting in vanilla python.
 
 The current implementation of the app requires a http server running in the js directory, because cef-python can't server javascript files internally. The alternative to this would be to add an internet connect as a requirement for it, which I am against for now. <sub><sup>Maybe something/someone can change my mind</sup></sub>
 
