@@ -1,8 +1,9 @@
-import numpy as np
+# import numpy as np
 from random import randint, sample, choices, random
 import string
 from pprint import pprint
 import re
+from collections import Counter
 
 """
     Bottom of the barrel. str_target can be anything but max_len will always be 1.    
@@ -97,6 +98,13 @@ class PatternBase(object):
         self.no_filter = no_filter
 
 
+    def random_splice(t, lo, hi):
+        no_splices = randint(lo, hi)
+        splices = [0] + sorted(choices(range(1, len(t)-1), k=no_splices)) + [len(t)-1] # small chance of adding extra entries
+        spliced = [t[splices[i]:splices[i+1]] for i in range(len(splices)-1)]
+        return spliced
+
+
     def generate_batch(self, batch_size= 1, ambiguity_threshold=4):
         for _ in range(batch_size):
             r, amb = self.__generate__()
@@ -105,6 +113,7 @@ class PatternBase(object):
             else:
                 print(f'Pattern {r} was excluded due to high ambiguity score:{amb}')
     
+
     def generate(self, ambiguity_threshold= 4, sort_idx=2):
         if patterns := self.__generate__():
             ranked = sorted(patterns, key=lambda x: x[sort_idx], reverse=True) # Sort by ambiguity
@@ -194,16 +203,104 @@ class RepetitionWordPattern(PatternBase):
     def generate(self, ambiguity_threshold= 10, sort_idx=2):
         return super().generate(ambiguity_threshold, sort_idx)
 
+class SpecialCharPattern(PatternBase):
+    """
+    t = 'Six sick hicks nick six slick bricks with picks and sticks'
+    print(len(t), t)
+    spliced = PatternBase.random_splice(t, 3, 6)
+    print(spliced)
+    for i, _s in enumerate(spliced):
+        s = SpecialCharPattern(_s, 0)
+        s.__generate__()
+    """
+
+    def __init__(self, str_target, pos, max_len=2, amb_norm = 10, p_decay = 0.5, *args, **kwargs):
+        super().__init__(str_target, max_len)
+        self.position = pos
+        self.charset = {
+                        'whitespace':[
+                            (r'\S', lambda s,t: ('whitespace_0', t)), # matches non-whitespace/words
+                            (r'\s', lambda s,t: ('whitespace_1', t)), # matches whitespace
+                        ],
+                        'digits':[
+                            (r'\D', lambda s,t: ('digits_0', t)), # matches non digit, same as [^0-9]
+                            (r'\d', lambda s,t: ('digits_1', t)), # matches digit
+                        ],
+                        'ends':[
+                            (r'\A' , lambda s,t: ('ends_0', t)), # ^
+                            (r'\Z' , lambda s,t: ('ends_1', t)), # $
+                            (r'\b' , lambda s,t: ('ends_2', t)), # matches non-words/whitespace in ends. USE to mark begining/end of string
+                            (r'\B' , lambda s,t: ('ends_3', t)), # matches digits and words not in the end. example 'py\B' => 'py2', 'python', but not 'py.' or 'py!'
+                        ],
+                        'words':[
+                            (r'\W' , lambda s,t: ('words_0', t)), # matches non-words, includes special chars like !@#$%^...
+                            (r'\w' , lambda s,t: ('words_1', t)), # matches words
+                        ],
+                        # '\\n'  # backref to the nth matching group
+                        }
+
+
+        for i, c in enumerate(self.charset.items(), 1):
+            k, v = c
+            p_weights = [amb_norm*(1-p_decay)**j for j in range(len(v))]
+            ambs = [(amb_norm-x)+i for x in p_weights]
+            if k == 'ends':
+                p_weights = [5, 5, 2.5, 1]
+                ambs = [2, 2, 5, 10]
+            self.charset[k] = list(zip(v, p_weights, ambs))
+
+
+    def __generate__(self, ambiguity_threshold=6):
+        r = []
+        # Ends management
+        if random() > 0.25:
+            if self.position == 0:
+                r.append((0, self.charset['ends'][0][0], self.charset['ends'][0][-1]))
+            elif self.position == -1:
+                r.append((-1, self.charset['ends'][1][0], self.charset['ends'][1][-1]))
+        else:
+            if self.position <=0:
+                r.append((self.position, self.charset['ends'][2][0], self.charset['ends'][2][-1]))
+    
+        # The rest
+        for k, v in self.charset.items():
+            pats = choices(v, weights=[x[1] for x in v], k = len(v))
+            scanner_list = [x[0] for x in v if self.no_filter or x[-1] <= ambiguity_threshold]
+
+            # print('*'*80)
+            sc = re.Scanner(scanner_list)
+            stuff = sc.scan(self.target)
+            print(len(stuff), k, stuff)
+            if stuff[0]:
+                counts = Counter([(x[0]) for x in stuff[0]])
+                pprint(counts)
+                if len(counts) > 1:
+                    key = min(counts, key=counts.get)
+                    pat = v[int(key.split('_')[-1])]
+                    reg, amb = pat[0][0], pat[-1]
+                    print(key, counts[key], reg, amb)
+                    print('*'*80)
+                else:
+                    continue
+                
+
+            # if 
+
+
 if __name__ == '__main__':
     # Extend your PC with your phone.
     # t = 'Two-player gaming made easy with socketJoy'
     # t = 'May the local multiplayer be with you hahaha'
     # t = 'Wireless game controller For Any Game'
     # t = 'A happy hippo hopped and hiccupped'
-    # t = 'Six sick hicks nick six slick bricks with picks and sticks'
-    print(t)
-    # for i, _s in enumerate(t.split(' ')):
-    s = RepetitionPattern(t)
-    for i, r, amb in s.generate():
-        print(i, amb, r)
+    t = 'Six sick hicks nick six slick, bricks with picks and sticks'
+    print(len(t), t)
+    spliced = PatternBase.random_splice(t, 3, 6)
+    print(spliced)
+    # for i, _s in enumerate(t.split(' ')[:1]):
+    for i, _s in enumerate(spliced):
+        s = SpecialCharPattern(_s, i)
+        s.__generate__()
+    # for i, r, amb in s.generate():
+    #     print(i, amb, r)
 
