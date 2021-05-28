@@ -90,24 +90,29 @@ import re
 
 class PatternBase(object):
 
-    def __init__(self, str_target, max_len, *args, **kwargs):
+    def __init__(self, str_target, max_len, no_filter=True, *args, **kwargs):
         self.target = str_target
         self.max_len = max_len
         self.ambiguity = 0
+        self.no_filter = no_filter
 
 
     def generate_batch(self, batch_size= 1, ambiguity_threshold=4):
         for _ in range(batch_size):
             r, amb = self.__generate__()
-            if amb <= ambiguity_threshold:
+            if self.no_filter or amb <= ambiguity_threshold:
                 yield (r, amb)
+            else:
+                print(f'Pattern {r} was excluded due to high ambiguity score:{amb}')
     
     def generate(self, ambiguity_threshold= 4, sort_idx=2):
         if patterns := self.__generate__():
             ranked = sorted(patterns, key=lambda x: x[sort_idx], reverse=True) # Sort by ambiguity
             for p in ranked:
-                if p[sort_idx] <= ambiguity_threshold:
+                if self.no_filter or p[sort_idx] <= ambiguity_threshold:
                     yield p
+                else:
+                    print(f'Pattern {p[1]} was excluded due to high ambiguity score:{p[sort_idx]}')
 
 
     # class SimplePattern(PatternBase):
@@ -158,12 +163,12 @@ class SingletonPattern(PatternBase):
         return rf'{re_str}', self.ambiguity
 
 
-class RepetitionPattern(PatternBase):
+class RepetitionWordPattern(PatternBase):
     """
     USAGE
     t = 'A happy hippo hopped and hiccupped'
     for i, _s in enumerate(t.split(' ')):
-        s = RepetitionPattern(_s )
+        s = RepetitionWordPattern(_s )
         for i, r, amb in s.generate():
             print(amb, r)
     """
@@ -171,18 +176,19 @@ class RepetitionPattern(PatternBase):
         super().__init__(str_target, 5)
         
     def __generate__(self):
-        rep_regr = re.compile(r"(.+?)\1+")
-        ambs = []
+        rep_regr = re.compile(r"(.+?)\1+") # Greedy search for repetitions of length 2 or more
         r = []
-        idx = []
         for match in rep_regr.finditer(self.target):
             index, match_str, reps = match.start(), match.group(1), int(len(match.group(0))/len(match.group(1)))
-            ambs.append((index* len(match_str)* reps))
+
             if reps > 2:
-                reps = f'{"1" if random() < 0.5 else "0"}, {reps}'
-            r.append(rf'{match_str}{{{reps}}}')
-            idx.append(index)
-        return list(zip(idx, r, ambs))
+                reps_str = f'{"1" if random() < 0.5 else "0"}, {reps}'
+            else:
+                reps_str = reps
+
+            r.append((index, rf'{match_str}{{{reps_str}}}', ((index + 1)* len(match_str)* reps)-1))
+
+        return r
 
         
     def generate(self, ambiguity_threshold= 10, sort_idx=2):
@@ -193,10 +199,11 @@ if __name__ == '__main__':
     # t = 'Two-player gaming made easy with socketJoy'
     # t = 'May the local multiplayer be with you hahaha'
     # t = 'Wireless game controller For Any Game'
-    t = 'A happy hippo hopped and hiccupped'
+    # t = 'A happy hippo hopped and hiccupped'
+    # t = 'Six sick hicks nick six slick bricks with picks and sticks'
     print(t)
-    for i, _s in enumerate(t.split(' ')):
-        s = RepetitionPattern(_s)
-        for i, r, amb in s.generate(10):
-            print(i, amb, r)
+    # for i, _s in enumerate(t.split(' ')):
+    s = RepetitionPattern(t)
+    for i, r, amb in s.generate():
+        print(i, amb, r)
 
