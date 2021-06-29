@@ -1,6 +1,7 @@
 import numpy as np
-from random import randint, sample, choices, random
+from random import randint, sample, choices, choice, random
 import string
+from collections import deque
 from pprint import pprint
 import re
 
@@ -87,6 +88,10 @@ import re
         (?(id/name)yes|no) Matches yes pattern if the group with id/name matched,
                         the (optional) no pattern otherwise.
 """
+# class Pattern(object):
+#     pattern:str
+#     ambiguity:float
+
 
 class PatternBase(object):
 
@@ -96,31 +101,27 @@ class PatternBase(object):
         self.ambiguity = 0
         self.no_filter = no_filter
 
-
-    def generate_batch(self, batch_size= 1, ambiguity_threshold=4):
+    def generate_batch(self, batch_size=1, ambiguity_threshold=4):
         for _ in range(batch_size):
             r, amb = self.__generate__()
             if self.no_filter or amb <= ambiguity_threshold:
                 yield (r, amb)
             else:
-                print(f'Pattern {r} was excluded due to high ambiguity score:{amb}')
-    
-    def generate(self, ambiguity_threshold= 4, sort_idx=2):
+                print(
+                    f'Pattern {r} was excluded due to high ambiguity score:{amb}')
+
+    def generate(self, ambiguity_threshold=4, sort_idx=2):
+        print(ambiguity_threshold, sort_idx)
         if patterns := self.__generate__():
-            ranked = sorted(patterns, key=lambda x: x[sort_idx], reverse=True) # Sort by ambiguity
+            # Sort by ambiguity
+            ranked = sorted(patterns, key=lambda x: x[sort_idx], reverse=True)
             for p in ranked:
                 if self.no_filter or p[sort_idx] <= ambiguity_threshold:
                     yield p
                 else:
-                    print(f'Pattern {p[1]} was excluded due to high ambiguity score:{p[sort_idx]}')
+                    print(
+                        f'Pattern {p[1]} was excluded due to high ambiguity score:{p[sort_idx]}')
 
-
-    # class SimplePattern(PatternBase):
-    # class SimpleORS(PatternBase):
-    # class ORS(PatternBase):
-    # class Range(PatternBase):
-    # class RangeSet(PatternBase):
-    # class Pattern(object):
 
 class SingletonPattern(PatternBase):
 
@@ -135,31 +136,34 @@ class SingletonPattern(PatternBase):
             for r, amb in s.generate_batch(2, 7):
                 print(amb, r)
     """
-    
+
     def __init__(self, str_target, max_len, pos, *args, **kwargs):
+        # IMPORTANT : pos must be -1 for the character before termination string ie last character/word
         super().__init__(str_target, max_len)
         self.position = pos
         # Sorted by their ambiguity in ascending order
         self.charset = ['^', '$', '?', '+', '*', '.']
 
-    def __generate__(self, amb_norm = 10, p_decay = 0.5):
+    def __generate__(self, amb_norm=10, p_decay=0.5):
         # generate for the given max_len and str_target.
         re_str = None
         p_weights = [amb_norm*(1-p_decay)**i for i in range(4)]
         ambs = [(amb_norm-x)+1 for x in p_weights]
         charset = dict(zip(self.charset[2:], ambs))
-        
+
         if self.max_len == 1:
             if self.position == 0:
                 re_str = self.charset[0]
             elif self.position == -1:
                 re_str = self.charset[1]
         else:
-            re_str = choices(self.charset[2:], weights=p_weights, k = self.max_len)
-            self.ambiguity = sum(map(lambda x: charset[x] * re_str.count(x), charset.keys()))
-                 
-        
-        self.ambiguity += sum(map(lambda x: re_str.count(x), self.charset)) if re_str else 0
+            re_str = choices(self.charset[2:],
+                             weights=p_weights, k=self.max_len)
+            self.ambiguity = sum(
+                map(lambda x: charset[x] * re_str.count(x), charset.keys()))
+
+        self.ambiguity += sum(map(lambda x: re_str.count(x),
+                              self.charset)) if re_str else 0
         return rf'{re_str}', self.ambiguity
 
 
@@ -172,38 +176,144 @@ class RepetitionWordPattern(PatternBase):
         for i, r, amb in s.generate():
             print(amb, r)
     """
-    def __init__(self, str_target):
-        super().__init__(str_target, 5)
-        
+
+    def __init__(self, str_target, max_len=5):
+        super().__init__(str_target, max_len)
+
     def __generate__(self):
-        rep_regr = re.compile(r"(.+?)\1+") # Greedy search for repetitions of length 2 or more
+        # Greedy search for repetitions of length 2 or more
+        rep_regr = re.compile(r"(.+?)\1+")
         r = []
         for match in rep_regr.finditer(self.target):
-            index, match_str, reps = match.start(), match.group(1), int(len(match.group(0))/len(match.group(1)))
+            index, match_str, reps = match.start(), match.group(
+                1), int(len(match.group(0))/len(match.group(1)))
 
             if reps > 2:
                 reps_str = f'{"1" if random() < 0.5 else "0"}, {reps}'
             else:
                 reps_str = reps
 
-            r.append((index, rf'{match_str}{{{reps_str}}}', ((index + 1)* len(match_str)* reps)-1))
+            r.append((index, rf'{match_str}{{{reps_str}}}',
+                     ((index + 1) * len(match_str) * reps)-1))
 
         return r
 
-        
-    def generate(self, ambiguity_threshold= 10, sort_idx=2):
+    def generate(self, ambiguity_threshold=10, sort_idx=2):
         return super().generate(ambiguity_threshold, sort_idx)
 
+
+class SpecialCharSeqPattern(PatternBase):
+    """
+    USAGE
+    t = '(May) the local multiplayer be with you hahaha'
+    t = random_split(t)
+
+    pprint(t)
+    for i, _s in enumerate(t):
+        pos = -1 if i == len(t)-1 else i
+        max_len = 1 if pos <= 0 else len(_s)
+        s = SpecialCharSeqPattern(_s, max_len, pos)
+        pprint(s.__generate__())
+        # for p in s.generate():
+        #     print(p)
+        print(s.ambiguity)
+        print("*"*20)
+
+    """
+
+    def __init__(self, str_target, max_len, pos, *args, **kwargs):
+        super().__init__(str_target, max_len)
+        # Sorted by their ambiguity in ascending order
+        self.position = pos
+        self.charset = {
+            'ends': (
+                '\A',  # Matches start of string, similar to ^
+                '\b',  # Matches empty string at the begining or end of a string, not in use in this implementation
+                '\Z',  # Matches end of string, similar to $
+            ),
+            'groups': (
+                '\s',  # Matches whitespace
+                '\w',  # Matches alphanumeric characters only
+                '\d',  # Matches digits only
+                # '\B',  # Matches empty string NOT at the begining or end of a string
+                '\W',  # Matches the complement of any alphanumeric character, mostly special chars
+                '\S',  # Matches non-whitespace characters
+                '\D',  # Matches non-digit characters
+            ),
+            'specials':
+                '[!@#$%^&*()_+]' # Matches escaped special characters
+        }
+
+
+    def __generate__(self, amb_norm=10, p_decay=0.5):
+        print(self.target)
+        r = []
+        for i, ch in enumerate(self.target):
+            # Enumerate all possible patterns that match the token 'ch'
+            matches = deque()
+            # ends
+            if (self.position == 0 and i == 0) or (self.position == -1 and i == self.max_len):
+                matches.append(self.charset['ends'][self.position])
+            # groups
+            for pat in self.charset['groups']:
+                p = re.compile(pat)
+                # print(p)
+                if p.match(ch):
+                    matches.append(pat)
+            # special chars
+            spec_pat = re.compile(self.charset['specials'])
+            if m := spec_pat.match(ch):
+                matches.appendleft(m.string)
+
+            # Rank them based on ambiguity
+            p_weights = [amb_norm*(1-p_decay)**i for i in range(len(matches))]
+            ambs = [(amb_norm-x)+1 for x in p_weights]
+
+            # Randomly choose one pattern per token
+            picks = choices(range(len(matches)), weights=p_weights, k=2)
+
+            # Store the ambiguity of each pattern
+            r.append((matches[picks[0]], ambs[picks[0]]))
+        # pprint(r)
+
+        self.ambiguity = sum([x[1] for x in r])
+        return r
+
+    def generate(self, ambiguity_threshold=10, sort_idx=1):
+        return super().generate(ambiguity_threshold, sort_idx)
+
+
+def random_split(t):
+    splits = [0] + sorted(sample(range(1, len(t) - 1),
+                          k=int(len(t)**(0.5)))) + [len(t)-1]
+    t = [t[splits[i]:splits[i+1]] for i in range(len(splits) - 1)]
+    return t
+
+
 if __name__ == '__main__':
+
+    # class SimplePattern(PatternBase): DONE
+    # class SimpleORS(PatternBase):
+    # class ORS(PatternBase):
+    # class Range(PatternBase): DONE
+    # class RangeSet(PatternBase): DONE
+
     # Extend your PC with your phone.
     # t = 'Two-player gaming made easy with socketJoy'
-    # t = 'May the local multiplayer be with you hahaha'
+    t = 'May the local multiplayer be with you hahaha'
     # t = 'Wireless game controller For Any Game'
     # t = 'A happy hippo hopped and hiccupped'
     # t = 'Six sick hicks nick six slick bricks with picks and sticks'
-    print(t)
-    # for i, _s in enumerate(t.split(' ')):
-    s = RepetitionPattern(t)
-    for i, r, amb in s.generate():
-        print(i, amb, r)
 
+    t = random_split(t)
+
+    pprint(t)
+    for i, _s in enumerate(t):
+        pos = -1 if i == len(t)-1 else i
+        max_len = 1 if pos <= 0 else len(_s)
+        s = SpecialCharSeqPattern(_s, max_len, pos)
+        pprint(s.__generate__())
+        # for p in s.generate():
+        #     print(p)
+        print(s.ambiguity)
+        print("*"*20)
