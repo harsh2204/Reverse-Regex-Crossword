@@ -1,7 +1,7 @@
 import numpy as np
-from random import randint, sample, choices, choice, random
+from random import randint, sample, choices, choice, random, shuffle
 import string
-from collections import deque
+from collections import deque, Counter, defaultdict
 from pprint import pprint
 import re
 
@@ -100,6 +100,8 @@ class PatternBase(object):
         self.max_len = max_len
         self.ambiguity = 0
         self.no_filter = no_filter
+        self.charset = string.ascii_letters + string.digits + \
+            string.punctuation + string.whitespace
 
     def generate_batch(self, batch_size=1, ambiguity_threshold=4):
         for _ in range(batch_size):
@@ -122,11 +124,12 @@ class PatternBase(object):
                     print(
                         f'Pattern {p[1]} was excluded due to high ambiguity score:{p[sort_idx]}')
 
-
     @staticmethod
     def random_split(t):
+        if len(t) <= 1:
+            return t
         splits = [0] + sorted(sample(range(1, len(t) - 1),
-                            k=int(len(t)**(0.5)))) + [len(t)-1]
+                                     k=int(len(t)**(0.5)))) + [len(t)-1]
         t = [t[splits[i]:splits[i+1]] for i in range(len(splits) - 1)]
         return t
 
@@ -249,11 +252,10 @@ class SpecialCharSeqPattern(PatternBase):
                 '\D',  # Matches non-digit characters
             ),
             'specials':
-                '[!@#$%^&*()_+]'  # Matches escaped special characters
+                string.punctuation  # Matches escaped special characters
         }
 
     def __generate__(self, amb_norm=10, p_decay=0.5):
-        print(self.target)
         r = []
         for i, ch in enumerate(self.target):
             # Enumerate all possible patterns that match the token 'ch'
@@ -270,7 +272,7 @@ class SpecialCharSeqPattern(PatternBase):
             # special chars
             spec_pat = re.compile(self.charset['specials'])
             if m := spec_pat.match(ch):
-                matches.appendleft(m.string)
+                matches.appendleft(f'\\{m.string}')
 
             # Rank them based on ambiguity
             p_weights = [amb_norm*(1-p_decay)**i for i in range(len(matches))]
@@ -291,26 +293,94 @@ class SpecialCharSeqPattern(PatternBase):
 
 class SetPattern(PatternBase):
     """
+    USAGE
+    t = 'Six sick hicks nick six slick bricks with picks and sticks'
 
+    t = PatternBase.random_split(t)
+
+    pprint(t)
+    print("*"*20)
+
+    for i, _s in enumerate(t):
+        s = SetPattern(_s)
+        pprint(s.__generate__())
+        print("*"*20)
     """
 
-    def __init__(self, str_target, max_len, allow_complement=False, max_ambiguity=30):
-        pass
+    def __init__(self, str_target, max_len=2, allow_complement=False, max_ambiguity=3):
+        super().__init__(str_target, max_len)
+        self.max_len = len(str_target) + max_len + max_ambiguity
+        self.complement = allow_complement
+        self.max_amb = max_ambiguity
+    
+
+    def stringify(self, s):
+        if len(self.target) > 1:
+            s += choice(['+', '*'])
+        elif random() < 0.25:
+            s += choice(['?', '*'])
+        return s
+
+
+    def __generate__(self, amb_multiplier=2):
+        c = Counter(self.target)
+        s = [x if x != ' ' else '\s' for x in c.keys()]
+        # Add extra garbage chars, one or more
+        extra_garbage = choices(
+            self.charset[:len(self.charset)//2], k=randint(1, self.max_amb))
+
+        # Remove dupes if any
+        s = list(set().union(s, extra_garbage))
+        shuffle(s)
+        self.ambiguity = amb_multiplier * len(extra_garbage) + sum(c.values())
+
+        return self.stringify(f"[{''.join(s)}]"), self.ambiguity
+
+
+class RangeSetPattern(SetPattern):
+    """
+    """
+    def __generate__(self, max_offset=1):
+        target = self.random_split(self.target) if len(self.target) > 3 else [self.target]
+        
+        r = []
+
+        for t in target:
+            ords = defaultdict(list)
+            # Group the ords by the following ranges:
+            for x in t:
+                if 65 <= ord(x) <= 90:
+                    ords['upper'].append(x)
+                elif 97 <= ord(x) <= 122:
+                    ords['lower'].append(x)
+                elif ord(x) == 32:
+                    ords['space'].append('\s')
+                else:
+                    ords['rest'].append(x)
+
+            print(t, ords, len(ords))
+            print("*"*10)
+        # consolidate the groups into minimal range sets
+        # add the offsets to the bounds
+        # calculate the ambiguity values based on the offsets
+        # stringify and return each val
 
 
 class GroupPattern(PatternBase):
     """
     """
+
     def __init__(self, str_target, max_len):
         raise NotImplementedError()
+
 
 class ORPattern(PatternBase):
     """
 
     """
+
     def __init__(self, str_target, max_len):
         raise NotImplementedError()
-
 
 
 if __name__ == '__main__':
@@ -323,20 +393,22 @@ if __name__ == '__main__':
 
     # Extend your PC with your phone.
     # t = 'Two-player gaming made easy with socketJoy'
-    t = 'May the local multiplayer be with you hahaha'
+    # t = 'May the local multiplayer be with you hahaha'
     # t = 'Wireless game controller For Any Game'
     # t = 'A happy hippo hopped and hiccupped'
-    # t = 'Six sick hicks nick six slick bricks with picks and sticks'
+    t = 'Six sick hicks nick six slick bricks with picks and sticks'
 
     t = PatternBase.random_split(t)
 
     pprint(t)
-    for i, _s in enumerate(t):
-        pos = -1 if i == len(t)-1 else i
-        max_len = 1 if pos <= 0 else len(_s)
-        s = SpecialCharSeqPattern(_s, max_len, pos)
+    print("*"*20)
+
+    for i, _s in enumerate(t[:1]):
+        # pos = -1 if i == len(t)-1 else i
+        # max_len = 1 if pos <= 0 else len(_s)
+        s = RangeSetPattern(_s)
         pprint(s.__generate__())
         # for p in s.generate():
         #     print(p)
-        print(s.ambiguity)
+        # print(s.ambiguity)
         print("*"*20)
