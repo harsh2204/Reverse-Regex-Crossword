@@ -123,6 +123,14 @@ class PatternBase(object):
                         f'Pattern {p[1]} was excluded due to high ambiguity score:{p[sort_idx]}')
 
 
+    @staticmethod
+    def random_split(t):
+        splits = [0] + sorted(sample(range(1, len(t) - 1),
+                            k=int(len(t)**(0.5)))) + [len(t)-1]
+        t = [t[splits[i]:splits[i+1]] for i in range(len(splits) - 1)]
+        return t
+
+
 class SingletonPattern(PatternBase):
 
     """
@@ -206,7 +214,7 @@ class SpecialCharSeqPattern(PatternBase):
     """
     USAGE
     t = '(May) the local multiplayer be with you hahaha'
-    t = random_split(t)
+    t = PatternBase.random_split(t)
 
     pprint(t)
     for i, _s in enumerate(t):
@@ -241,9 +249,8 @@ class SpecialCharSeqPattern(PatternBase):
                 '\D',  # Matches non-digit characters
             ),
             'specials':
-                '[!@#$%^&*()_+]' # Matches escaped special characters
+                '[!@#$%^&*()_+]'  # Matches escaped special characters
         }
-
 
     def __generate__(self, amb_norm=10, p_decay=0.5):
         print(self.target)
@@ -274,7 +281,6 @@ class SpecialCharSeqPattern(PatternBase):
 
             # Store the ambiguity of each pattern
             r.append((matches[picks[0]], ambs[picks[0]]))
-        # pprint(r)
 
         self.ambiguity = sum([x[1] for x in r])
         return r
@@ -283,11 +289,28 @@ class SpecialCharSeqPattern(PatternBase):
         return super().generate(ambiguity_threshold, sort_idx)
 
 
-def random_split(t):
-    splits = [0] + sorted(sample(range(1, len(t) - 1),
-                          k=int(len(t)**(0.5)))) + [len(t)-1]
-    t = [t[splits[i]:splits[i+1]] for i in range(len(splits) - 1)]
-    return t
+class SetPattern(PatternBase):
+    """
+
+    """
+
+    def __init__(self, str_target, max_len, allow_complement=False, max_ambiguity=30):
+        pass
+
+
+class GroupPattern(PatternBase):
+    """
+    """
+    def __init__(self, str_target, max_len):
+        raise NotImplementedError()
+
+class ORPattern(PatternBase):
+    """
+
+    """
+    def __init__(self, str_target, max_len):
+        raise NotImplementedError()
+
 
 
 if __name__ == '__main__':
@@ -305,7 +328,7 @@ if __name__ == '__main__':
     # t = 'A happy hippo hopped and hiccupped'
     # t = 'Six sick hicks nick six slick bricks with picks and sticks'
 
-    t = random_split(t)
+    t = PatternBase.random_split(t)
 
     pprint(t)
     for i, _s in enumerate(t):
