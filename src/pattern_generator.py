@@ -312,15 +312,13 @@ class SetPattern(PatternBase):
         self.max_len = len(str_target) + max_len + max_ambiguity
         self.complement = allow_complement
         self.max_amb = max_ambiguity
-    
 
-    def stringify(self, s):
-        if len(self.target) > 1:
+    def stringify(self, s, length=-1):
+        if length > 1 or len(self.target) > 1:
             s += choice(['+', '*'])
         elif random() < 0.25:
             s += choice(['?', '*'])
         return s
-
 
     def __generate__(self, amb_multiplier=2):
         c = Counter(self.target)
@@ -337,34 +335,74 @@ class SetPattern(PatternBase):
         return self.stringify(f"[{''.join(s)}]"), self.ambiguity
 
 
+    def complement(self):
+        raise NotImplementedError()
+
 class RangeSetPattern(SetPattern):
     """
+    USAGE
+    t = 'Six sick hicks nick six slick bricks with picks and sticks'
+    t = PatternBase.random_split(t)
+    pprint(t)
+    print("*"*20)
+
+    for i, _s in enumerate(t):
+        s = RangeSetPattern(_s)
+        pprint(s.__generate__())
+        print(s._target) # List of sets generated for the given target
+        print("*"*20)
     """
-    def __generate__(self, max_offset=1):
-        target = self.random_split(self.target) if len(self.target) > 3 else [self.target]
-        
+
+    def __generate__(self, min_offset=1, max_offset=10):
+        target = self.random_split(self.target) if len(
+            self.target) > 3 else [self.target]
+        self._target = target
+
         r = []
-
         for t in target:
-            ords = defaultdict(list)
             # Group the ords by the following ranges:
+            bounds = {'u': [123, 64], 'l': [123, 64]}
+            pat = []
             for x in t:
-                if 65 <= ord(x) <= 90:
-                    ords['upper'].append(x)
-                elif 97 <= ord(x) <= 122:
-                    ords['lower'].append(x)
-                elif ord(x) == 32:
-                    ords['space'].append('\s')
+                chord = ord(x)
+                # consolidate the groups into minimal range sets
+                if 65 <= chord <= 90:
+                    bounds['u'] = min(bounds['u'][0], chord), max(bounds['u'][1], chord)
+                elif 97 <= chord <= 122:
+                    bounds['l'] = min(bounds['l'][0], chord), max(bounds['l'][1], chord)
+                    # bounds['l'][0] = min(bounds['l'][0], chord)
+                    # bounds['l'][1] = max(bounds['l'][1], chord)
+                elif ('\s' not in pat) and chord == 32:
+                    pat.append(('\s', 1))
                 else:
-                    ords['rest'].append(x)
+                    pat.append((x, 2))
 
-            print(t, ords, len(ords))
-            print("*"*10)
-        # consolidate the groups into minimal range sets
-        # add the offsets to the bounds
-        # calculate the ambiguity values based on the offsets
-        # stringify and return each val
+            for k, v in bounds.items():
+                if v[0] > v[1]:
+                    continue
+                if k == 'u':
+                    # add the offsets to the bounds
+                    left_b = max(65, v[0] - randint(min_offset, max_offset))
+                    right_b = min(90, v[1] + randint(min_offset, max_offset))
+                    pat.append((f'{chr(left_b)}-{chr(right_b)}',
+                               (v[0] - left_b + right_b - v[1])))
+                if k == 'l':
+                    left_b = max(97, v[0] - randint(min_offset, max_offset))
+                    right_b = min(122, v[1] + randint(min_offset, max_offset))
+                    pat.append((f'{chr(left_b)}-{chr(right_b)}',
+                               (v[0] - left_b + right_b - v[1])))
 
+            shuffle(pat)
+            # calculate the ambiguity values based on the offsets
+            amb = sum([x[1] for x in pat])
+            # stringify and return each val
+            r.append((self.stringify(
+                f'[{"".join([x[0] for x in pat])}]', len(t)), amb))
+        return r
+
+
+    def complement(self):
+        raise NotImplementedError()
 
 class GroupPattern(PatternBase):
     """
@@ -385,12 +423,6 @@ class ORPattern(PatternBase):
 
 if __name__ == '__main__':
 
-    # class SimplePattern(PatternBase): DONE
-    # class SimpleORS(PatternBase):
-    # class ORS(PatternBase):
-    # class Range(PatternBase): DONE
-    # class RangeSet(PatternBase): DONE
-
     # Extend your PC with your phone.
     # t = 'Two-player gaming made easy with socketJoy'
     # t = 'May the local multiplayer be with you hahaha'
@@ -403,11 +435,13 @@ if __name__ == '__main__':
     pprint(t)
     print("*"*20)
 
-    for i, _s in enumerate(t[:1]):
+    for i, _s in enumerate(t):
         # pos = -1 if i == len(t)-1 else i
         # max_len = 1 if pos <= 0 else len(_s)
         s = RangeSetPattern(_s)
         pprint(s.__generate__())
+        print(s._target)
+
         # for p in s.generate():
         #     print(p)
         # print(s.ambiguity)
