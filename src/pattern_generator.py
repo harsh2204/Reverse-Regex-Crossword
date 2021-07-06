@@ -307,16 +307,18 @@ class SetPattern(PatternBase):
         print("*"*20)
     """
 
-    def __init__(self, str_target, max_len=2, allow_complement=False, max_ambiguity=3):
+    def __init__(self, str_target, max_len=2, allow_complement=False, max_ambiguity=3, greedy_threshold=0.25, no_split=False):
         super().__init__(str_target, max_len)
-        self.max_len = len(str_target) + max_len + max_ambiguity
+        self.max_len = len(str_target) + max_len + max_ambiguity + int(allow_complement)
         self.complement = allow_complement
         self.max_amb = max_ambiguity
+        self.greedy_threshold = greedy_threshold
+        self.no_split = no_split
 
     def stringify(self, s, length=-1):
         if length > 1 or len(self.target) > 1:
             s += choice(['+', '*'])
-        elif random() < 0.25:
+        elif random() < self.greedy_threshold:
             s += choice(['?', '*'])
         return s
 
@@ -361,8 +363,11 @@ class RangeSetPattern(SetPattern):
         return max(bound_lo, lower - randint(offset_lo, offset_hi)), min(bound_hi, upper + randint(offset_lo, offset_hi))
 
     def __generate__(self, min_offset=1, max_offset=10):
-        target = self.random_split(self.target) if len(
-            self.target) > 3 else [self.target]
+        if len(self.target) < 3 or self.no_split:
+            target = [self.target]
+        else:
+            target = self.random_split(self.target) 
+
         self._target = target
 
         r = []
@@ -420,17 +425,17 @@ class RangeSetPattern(SetPattern):
         return r
 
 
-class GroupPattern(PatternBase):
+class ORPattern(PatternBase):
     """
+
     """
 
     def __init__(self, str_target, max_len):
         raise NotImplementedError()
 
 
-class ORPattern(PatternBase):
+class GroupPattern(PatternBase):
     """
-
     """
 
     def __init__(self, str_target, max_len):
@@ -454,9 +459,10 @@ if __name__ == '__main__':
     for i, _s in enumerate(t):
         # pos = -1 if i == len(t)-1 else i
         # max_len = 1 if pos <= 0 else len(_s)
-        s = RangeSetPattern(_s, allow_complement=True)
+        s = RangeSetPattern(_s)
         pprint(s.__generate__(max_offset=3))
         print(s._target)
+        print(s.max_len)
 
         # for p in s.generate():
         #     print(p)
