@@ -330,13 +330,17 @@ class SetPattern(PatternBase):
         # Remove dupes if any
         s = list(set().union(s, extra_garbage))
         shuffle(s)
+
+        if self.complement:
+            s = list(set(string.ascii_letters) - set(s))[:len(s)]
+
         self.ambiguity = amb_multiplier * len(extra_garbage) + sum(c.values())
 
-        return self.stringify(f"[{''.join(s)}]"), self.ambiguity
-
+        return self.stringify(f"[{'^' if self.complement else ''}{''.join(s)}]"), self.ambiguity
 
     def complement(self):
         raise NotImplementedError()
+
 
 class RangeSetPattern(SetPattern):
     """
@@ -353,6 +357,9 @@ class RangeSetPattern(SetPattern):
         print("*"*20)
     """
 
+    def rand_range_offset(self, lower, upper, offset_lo, offset_hi, bound_lo, bound_hi):
+        return max(bound_lo, lower - randint(offset_lo, offset_hi)), min(bound_hi, upper + randint(offset_lo, offset_hi))
+
     def __generate__(self, min_offset=1, max_offset=10):
         target = self.random_split(self.target) if len(
             self.target) > 3 else [self.target]
@@ -361,48 +368,57 @@ class RangeSetPattern(SetPattern):
         r = []
         for t in target:
             # Group the ords by the following ranges:
-            bounds = {'u': [123, 64], 'l': [123, 64]}
-            pat = []
+            upper_case, lower_case = [91, 64], [123, 96]
+            pat = []  # this will contain anything inside the [] for the current target
             for x in t:
                 chord = ord(x)
                 # consolidate the groups into minimal range sets
-                if 65 <= chord <= 90:
-                    bounds['u'] = min(bounds['u'][0], chord), max(bounds['u'][1], chord)
-                elif 97 <= chord <= 122:
-                    bounds['l'] = min(bounds['l'][0], chord), max(bounds['l'][1], chord)
-                    # bounds['l'][0] = min(bounds['l'][0], chord)
-                    # bounds['l'][1] = max(bounds['l'][1], chord)
+                if x.isupper():
+                    upper_case = min(upper_case[0], chord), max(
+                        upper_case[1], chord)
+                elif x.islower():
+                    lower_case = min(lower_case[0], chord), max(
+                        lower_case[1], chord)
                 elif ('\s' not in pat) and chord == 32:
-                    pat.append(('\s', 1))
+                    # if space has 0 amb -> don't use it
+                    pat.append(('\s', not(self.complement)))
                 else:
                     pat.append((x, 2))
 
-            for k, v in bounds.items():
+            for i, v in enumerate([upper_case, lower_case]):
+                real_bounds = (65, 90) if not(i) else (97, 122)
                 if v[0] > v[1]:
                     continue
-                if k == 'u':
-                    # add the offsets to the bounds
-                    left_b = max(65, v[0] - randint(min_offset, max_offset))
-                    right_b = min(90, v[1] + randint(min_offset, max_offset))
-                    pat.append((f'{chr(left_b)}-{chr(right_b)}',
-                               (v[0] - left_b + right_b - v[1])))
-                if k == 'l':
-                    left_b = max(97, v[0] - randint(min_offset, max_offset))
-                    right_b = min(122, v[1] + randint(min_offset, max_offset))
-                    pat.append((f'{chr(left_b)}-{chr(right_b)}',
-                               (v[0] - left_b + right_b - v[1])))
+
+                if self.complement:
+                    # Alternatively, we could use set.difference of the respective upper/lower case
+                    # letters and string.ascii_* to collect the excluded letters,but this method works
+                    # slightly better for ranges in this case since we're already calculating range bounds.
+                    if abs(v[0] - real_bounds[0]) > abs(v[1] - real_bounds[1]):
+                        v = [real_bounds[0] +
+                             round(random()), v[0] - (max_offset + 1)]
+                    else:
+                        v = [v[1] + (max_offset + 1),
+                             real_bounds[1] - round(random())]
+
+                # add the offsets to the bounds
+                left_b, right_b = self.rand_range_offset(
+                    v[0], v[1], min_offset, max_offset, *real_bounds)
+                pat.append((f"{chr(left_b)}-{chr(right_b)}",
+                            (v[0] - left_b + right_b - v[1])))
 
             shuffle(pat)
             # calculate the ambiguity values based on the offsets
             amb = sum([x[1] for x in pat])
+
+            if self.complement:
+                pat.insert(0, ('^', 2*amb))
+
             # stringify and return each val
             r.append((self.stringify(
                 f'[{"".join([x[0] for x in pat])}]', len(t)), amb))
         return r
 
-
-    def complement(self):
-        raise NotImplementedError()
 
 class GroupPattern(PatternBase):
     """
@@ -438,8 +454,8 @@ if __name__ == '__main__':
     for i, _s in enumerate(t):
         # pos = -1 if i == len(t)-1 else i
         # max_len = 1 if pos <= 0 else len(_s)
-        s = RangeSetPattern(_s)
-        pprint(s.__generate__())
+        s = RangeSetPattern(_s, allow_complement=True)
+        pprint(s.__generate__(max_offset=3))
         print(s._target)
 
         # for p in s.generate():
