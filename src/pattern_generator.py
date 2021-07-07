@@ -124,6 +124,14 @@ class PatternBase(object):
                     print(
                         f'Pattern {p[1]} was excluded due to high ambiguity score:{p[sort_idx]}')
 
+    def split_maxlen(self, maxlen=3):
+        if len(self.target) < maxlen or self.no_split:
+            target = [self.target]
+        else:
+            target = self.random_split(self.target)
+        self._target = target
+        return target
+
     @staticmethod
     def random_split(t):
         if len(t) <= 1:
@@ -252,7 +260,7 @@ class SpecialCharSeqPattern(PatternBase):
                 '\D',  # Matches non-digit characters
             ),
             'specials':
-                string.punctuation  # Matches escaped special characters
+                f'[{string.punctuation}]'  # Matches escaped special characters
         }
 
     def __generate__(self, amb_norm=10, p_decay=0.5):
@@ -266,7 +274,6 @@ class SpecialCharSeqPattern(PatternBase):
             # groups
             for pat in self.charset['groups']:
                 p = re.compile(pat)
-                # print(p)
                 if p.match(ch):
                     matches.append(pat)
             # special chars
@@ -309,7 +316,8 @@ class SetPattern(PatternBase):
 
     def __init__(self, str_target, max_len=2, allow_complement=False, max_ambiguity=3, greedy_threshold=0.25, no_split=False):
         super().__init__(str_target, max_len)
-        self.max_len = len(str_target) + max_len + max_ambiguity + int(allow_complement)
+        self.max_len = len(str_target) + max_len + \
+            max_ambiguity + int(allow_complement)
         self.complement = allow_complement
         self.max_amb = max_ambiguity
         self.greedy_threshold = greedy_threshold
@@ -340,8 +348,8 @@ class SetPattern(PatternBase):
 
         return self.stringify(f"[{'^' if self.complement else ''}{''.join(s)}]"), self.ambiguity
 
-    def complement(self):
-        raise NotImplementedError()
+    def generate(self, ambiguity_threshold=6, sort_idx=1):
+        return super().generate(ambiguity_threshold, sort_idx)
 
 
 class RangeSetPattern(SetPattern):
@@ -363,12 +371,7 @@ class RangeSetPattern(SetPattern):
         return max(bound_lo, lower - randint(offset_lo, offset_hi)), min(bound_hi, upper + randint(offset_lo, offset_hi))
 
     def __generate__(self, min_offset=1, max_offset=10):
-        if len(self.target) < 3 or self.no_split:
-            target = [self.target]
-        else:
-            target = self.random_split(self.target) 
-
-        self._target = target
+        target = self.split_maxlen()
 
         r = []
         for t in target:
@@ -424,22 +427,88 @@ class RangeSetPattern(SetPattern):
                 f'[{"".join([x[0] for x in pat])}]', len(t)), amb))
         return r
 
+    def generate(self, ambiguity_threshold=6, sort_idx=1):
+        return super().generate(ambiguity_threshold, sort_idx)
+
 
 class ORPattern(PatternBase):
     """
+    USAGE
+    t = 'Six sick hicks nick six slick bricks with picks and sticks'
 
+    t = PatternBase.random_split(t)
+
+    pprint(t)
+    print("*"*20)
+
+    for i, _s in enumerate(t):
+        # pos = -1 if i == len(t)-1 else i
+        # max_len = 1 if pos <= 0 else len(_s)
+        s = ORPattern(_s)
+        pprint(s.__generate__())
+        print(s._target)
+        # for p in s.generate():
+        #     print(p)
+        # print(s.ambiguity)
+        print("*"*20)
     """
 
-    def __init__(self, str_target, max_len):
+    def __init__(self, str_target, max_len=2, no_split=False):
+        assert max_len >= 2
+        super().__init__(str_target, max_len)
+        self.no_split = no_split
+
+    def __generate__(self, amb_multiplier=5):
+        r = []
+        target = self.split_maxlen()
+        for t in target:
+            s = t.replace(' ', '\s')
+            pat = [s]
+            pat += ["".join(choices(string.ascii_letters, k=len(t)))
+                    for k in range(self.max_len-1)]
+            x = "|".join(pat)
+
+            if not(self.no_split):
+                # replace this with group pattern at some point
+                x = f'({x})'
+
+            r.append((x, int((amb_multiplier + self.max_len)/(len(t)**0.5))))
+        # calculate ambiguity values
+        return r
+
+    def generate(self, ambiguity_threshold=6, sort_idx=1):
+        return super().generate(ambiguity_threshold, sort_idx)
+
+
+# class GroupPattern(PatternBase):
+#     """
+#     """
+
+#     def __init__(self, str_target, max_len):
+#         raise NotImplementedError()
+
+
+class PatternGenerator(object):
+
+    generators = {
+        'simple': SingletonPattern,
+        'reps': RepetitionWordPattern,
+        'spec_chars': SpecialCharSeqPattern,
+        'set': SetPattern,
+        'range': RangeSetPattern,
+        'lor': ORPattern
+    }
+
+    def __init__(self, s: str, max_chunk_len: int, batch_size):
+        self.s = s
+        self.chunk_size = max_chunk_len
+        self.batch_size = batch_size
+        self.list = []
         raise NotImplementedError()
 
-
-class GroupPattern(PatternBase):
-    """
-    """
-
-    def __init__(self, str_target, max_len):
-        raise NotImplementedError()
+    def __iter__(self):
+        for x in self.list:
+            yield x
 
 
 if __name__ == '__main__':
@@ -459,11 +528,9 @@ if __name__ == '__main__':
     for i, _s in enumerate(t):
         # pos = -1 if i == len(t)-1 else i
         # max_len = 1 if pos <= 0 else len(_s)
-        s = RangeSetPattern(_s)
-        pprint(s.__generate__(max_offset=3))
+        s = ORPattern(_s)
+        pprint(s.__generate__())
         print(s._target)
-        print(s.max_len)
-
         # for p in s.generate():
         #     print(p)
         # print(s.ambiguity)
